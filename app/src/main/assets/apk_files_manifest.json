@@ -1,0 +1,83 @@
+
+{
+  "minBuildCode": 162,
+  "maxBuildCode": null,
+  "basePath": "",
+  "targetPackageName": ["com.chucklefish.stardewvalley"],
+  "manifestEntries": [
+    {
+      "targetPath": "classes.dex",
+      "assetPath": "apk/classes.dex",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "res/mipmap-mdpi-v4/ic_launcher_foreground.png",
+      "assetPath": "apk/ic_launcher_foreground.png",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "res/mipmap-hdpi-v4/ic_launcher_foreground.png",
+      "assetPath": "apk/ic_launcher_foreground.png",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "res/mipmap-xhdpi-v4/ic_launcher_foreground.png",
+      "assetPath": "apk/ic_launcher_foreground.png",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "res/mipmap-xxhdpi-v4/ic_launcher_foreground.png",
+      "assetPath": "apk/ic_launcher_foreground.png",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "res/mipmap-xxxhdpi-v4/ic_launcher_foreground.png",
+      "assetPath": "apk/ic_launcher_foreground.png",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "assemblies/",
+      "assetPath": "apk/*.dll",
+      "compression": 0,
+      "external": false
+    },
+    {
+      "targetPath": "lib/arm64-v8a/",
+      "assetPath": "apk/lib/arm64-v8a/*.so",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "lib/armeabi-v7a/",
+      "assetPath": "apk/lib/armeabi-v7a/*.so",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "lib/x86/",
+      "assetPath": "apk/lib/x86/*.so",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "lib/x86_64/",
+      "assetPath": "apk/lib/x86_64/*.so",
+      "compression": 8,
+      "external": false
+    },
+    {
+      "targetPath": "assemblies/",
+      "assetPath": "assemblies/assemblies",
+      "origin": 1,
+      "isXABA": true,
+      "compression": 0,
+      "external": false
+    }
+  ]
+}
