@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "title": "Mod Install General Procedure",
+      "author": "ZaneYork",
+      "content": "1.Query <a href=\"https://smapi.io/mods\">Compat</a> website for mod compatibility and latest download url<br>2.Download mod to your phone<br>3.Extract mod zip pack to internal storage of StardewValley/Mods directory<br>4.Press launch button provided by installer to make sure mod environment is satisfied and launch game"
+    },
+    {
+      "title": "Mod Compat Website Instructions",
+      "author": "凪白みと的小狐狸",
+      "content": "<a href=\"https://smapi.io/mods\">There</a> lists many mods, to tell you if it is compatible. The list has four background colors: green, ye
