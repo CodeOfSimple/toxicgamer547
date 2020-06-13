@@ -19,4 +19,12 @@
     {
       "title": "Some of Most Used Framework Mods",
       "author": "ZaneYork",
-      "content": "<a href=\"https://www.nexusmods.com/stardewvalley/mods/1915?tab=files\">Content Patcher</a>: Most of the content packs(not single xnb file) needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1348?tab=files\">Space Core</a>: Json Assets needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1720?tab=files\">Json Assets</a>: Most of the content pack adding new items to game needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/4970?tab=files\">Producer Framework Mod</a>: Most of the content pack adding new receipt needs
+      "content": "<a href=\"https://www.nexusmods.com/stardewvalley/mods/1915?tab=files\">Content Patcher</a>: Most of the content packs(not single xnb file) needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1348?tab=files\">Space Core</a>: Json Assets needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1720?tab=files\">Json Assets</a>: Most of the content pack adding new items to game needs it<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/4970?tab=files\">Producer Framework Mod</a>: Most of the content pack adding new receipt needs it"
+    },
+    {
+      "title": "CustomLocalization's feature",
+      "author": "alone06101",
+      "content": "①Load xnb files from it's Content folder to game.<br>Notice: xnb file in Content should has the same directory structure with game's(create it if not exist)<br>②Add new locale(such as Chinese) to the game"
+    }
+  ]
+}
