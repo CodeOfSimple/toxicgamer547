@@ -24,4 +24,12 @@
     {
       "title": "部分常用框架包下载链接",
       "author": "ZaneYork",
-      "content": "<a href=\"https://www.nexusmods.com/stardewvalley/mods/1915?tab=files\">Content Patcher</a>: CP前置，大部分美化包(非xnb替换类)需要的前置Mod<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1348?tab=files\">Space Core</a>: SC
+      "content": "<a href=\"https://www.nexusmods.com/stardewvalley/mods/1915?tab=files\">Content Patcher</a>: CP前置，大部分美化包(非xnb替换类)需要的前置Mod<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1348?tab=files\">Space Core</a>: SC前置，被Json Assets等Mod依赖的框架<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/1720?tab=files\">Json Assets</a>: JA前置，大部分新增物品类Mod需要的前置Mod<br><a href=\"https://www.nexusmods.com/stardewvalley/mods/4970?tab=files\">Producer Framework Mod</a>: PFM前置，大部分新增制作配方类Mod需要的前置Mod"
+    },
+    {
+      "title": "CustomLocalization（简称为CL）的作用",
+      "author": "alone06101",
+      "content": "①加载Content里面的xnb文件进入到游戏中。<br>注意：Content里面的xnb文件位置必须与游戏安装包里的文件位置相一致才可以(不存在的位置可以自行新建)。<br>②可以通过加载Content里面的语言包增加游戏语言。"
+    }
+  ]
+}
