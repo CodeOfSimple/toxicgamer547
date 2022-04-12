@@ -102,4 +102,64 @@
             "Default | UpdateKey": "Nexus:2256"
         },
 
-        "Py
+        "PyTK": {
+            "ID": "Platonymous.Toolkit",
+            "Default | UpdateKey": "Nexus:1726"
+        },
+
+        "SpaceCore": {
+            "ID": "spacechase0.SpaceCore",
+            "Default | UpdateKey": "Nexus:1348"
+        },
+
+        "Stardust Core": {
+            "ID": "Omegasis.StardustCore",
+            "Default | UpdateKey": "Nexus:2341"
+        },
+
+        "TMXL Map Toolkit": {
+            "ID": "Platonymous.TMXLoader",
+            "Default | UpdateKey": "Nexus:1820"
+        },
+
+        /*********
+        ** Obsolete
+        *********/
+        "Animal Mood Fix": {
+            "ID": "GPeters-AnimalMoodFix",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "the animal mood bugs were fixed in Stardew Valley 1.2."
+        },
+
+        "Bee House Flower Range Fix": {
+            "ID": "kirbylink.beehousefix",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "the bee house flower range was fixed in Stardew Valley 1.4."
+        },
+
+        "Colored Chests": {
+            "ID": "4befde5c-731c-4853-8e4b-c5cdf946805f",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "colored chests were added in Stardew Valley 1.1."
+        },
+
+        "Modder Serialization Utility": {
+            "ID": "SerializerUtils-0-1",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "it's no longer maintained or used."
+        },
+
+        "No Debug Mode": {
+            "ID": "NoDebugMode",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "debug mode was removed in SMAPI 1.0."
+        },
+
+        "Split Screen": {
+            "ID": "Ilyaki.SplitScreen",
+            "~ | Status": "Obsolete",
+            "~ | StatusReasonPhrase": "split-screen mode was added in Stardew Valley 1.5"
+        },
+
+        /*********
+        ** Broke in
