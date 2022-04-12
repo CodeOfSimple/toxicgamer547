@@ -286,4 +286,56 @@
             "ID": "bcmpinc.WearMoreRings",
             "~4.1.0 | Status": "AssumeBroken",
             "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
-        }
+        },
+
+        /*********
+        ** Broke in SDV 1.5 (Content Patcher packs)
+        *********/
+        "mi.Mermaids": {
+            "ID": "mi.Mermaids",
+            "~1.0.0 | Status": "AssumeBroken",
+            "~1.0.0 | StatusReasonDetails": "causes errors due to removed Stardew Valley 1.5 content"
+        },
+
+        /*********
+        ** Broke in SDV 1.5 (SMAPI mods)
+        *********/
+        "ChestEx": {
+            "ID": "berkayylmao.ChestEx",
+            "~1.3.4 | Status": "AssumeBroken",
+            "~1.3.4 | StatusReasonDetails": "has no effect due to changes in Stardew Valley 1.5, causes crashes in other mods like Chests Anywhere"
+        },
+
+        "Custom Furniture": {
+            "ID": "Platonymous.CustomFurniture",
+            "~0.11.2 | Status": "AssumeBroken",
+            "~0.11.2 | StatusReasonDetails": "causes errors and custom furniture no longer work in Stardew Valley 1.5"
+        },
+
+        "Custom Localization": {
+            "ID": "ZaneYork.CustomLocalization",
+            "FormerIDs": "SMAPI.CustomLocalization", // changed in 1.0.1
+            "~1.1 | Status": "AssumeBroken",
+            "~1.1 | StatusReasonDetails": "reflection error due to renamed _localizedAssets field"
+        },
+
+        "Geode Info Menu": {
+            "ID": "cat.geodeinfomenu",
+            "~1.5.2 | Status": "AssumeBroken",
+            "~1.5.2 | StatusReasonDetails": "shows no info, freezes game if you try to search"
+        },
+
+        "Mod Settings Tab": {
+            "ID": "GilarF.ModSettingsTab",
+            "~0.2.1 | Status": "AssumeBroken",
+            "~0.2.1 | StatusReasonDetails": "fails extending title menu"
+        },
+
+        "More Grass": {
+            "ID": "EpicBellyFlop45.MoreGrass",
+            "~1.0.8 | Status": "AssumeBroken",
+            "~1.0.8 | StatusReasonDetails": "crashes on save load"
+        },
+
+        "TreeTransplant": {
+            
