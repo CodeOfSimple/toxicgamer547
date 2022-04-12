@@ -338,4 +338,63 @@
         },
 
         "TreeTransplant": {
-            
+            "ID": "TreeTransplant",
+            "~1.0.9 | Status": "AssumeBroken",
+            "~3.0.0 | StatusReasonDetails": "breaks game launch due to AccessViolationException"
+        },
+
+        /*********
+        ** Broke in SDV 1.4
+        *********/
+        "Auto Quality Patch": {
+            "ID": "SilentOak.AutoQualityPatch",
+            "~2.1.3-unofficial.7-mizzion | Status": "AssumeBroken",
+            "~2.1.3-unofficial.7-mizzion | StatusReasonDetails": "broken due to runtime errors"
+        },
+
+        "Fix Dice": {
+            "ID": "ashley.fixdice",
+            "~1.1.2 | Status": "AssumeBroken",
+            "~1.1.2 | StatusReasonDetails": "crashes game on startup"
+        },
+
+        "Invite Code Mod": {
+            "ID": "KOREJJamJar.InviteCodeMod",
+            "~1.0.1 | Status": "AssumeBroken"
+        },
+
+        "Loved Labels": {
+            "ID": "Advize.LovedLabels",
+            "~2.2.1-unofficial.2-pathoschild | Status": "AssumeBroken"
+        },
+
+        "Neat Additions": {
+            "ID": "ilyaki.neatadditions",
+            "~1.0.3 | Status": "AssumeBroken"
+        },
+
+        "Remote Fridge Storage": {
+            "ID": "EternalSoap.RemoteFridgeStorage",
+            "~1.5 | Status": "AssumeBroken"
+        },
+
+        "Stack Everything": {
+            "ID": "cat.stackeverything",
+            "~2.15 | Status": "AssumeBroken"
+        },
+
+        /*********
+        ** Broke in SMAPI 3.0 (runtime errors due to lifecycle changes)
+        *********/
+        "Advancing Sprinklers": {
+            "ID": "warix3.advancingsprinklers",
+            "~1.0.0 | Status": "AssumeBroken"
+        },
+
+        "Better Sprinklers": {
+            "ID": "Speeder.BetterSprinklers",
+            "~2.3.1-unofficial.7-pathoschild | Status": "AssumeBroken"
+        },
+
+        "Current Location (Vrakyas)": {
+            "ID
