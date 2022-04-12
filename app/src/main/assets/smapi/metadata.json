@@ -41,4 +41,65 @@
      *     the specified version isn't compatible), or AssumeCompatible (SMAPI will try to load it
      *     even if it detects incompatible code).
      *
-     *     Note that this shouldn't be set to 'AssumeBro
+     *     Note that this shouldn't be set to 'AssumeBroken' if SMAPI can detect the incompatibility
+     *     automatically, since that hides the details from trace logs.
+     *
+     *   - StatusReasonPhrase: a message to show to the player explaining why the mod can't be loaded
+     *     (if applicable). If blank, will default to a generic not-compatible message.
+     *
+     *   - StatusReasonDetails: a technical reason shown in TRACE logs, indicating why the status
+     *     was overridden. If not provided, it defaults to the StatusReasonPhrase or 'no reason given'.
+     */
+    "ModData": {
+        /*********
+        ** Mods bundles with SMAPI
+        *********/
+        "Error Handler": {
+            "ID": "SMAPI.ErrorHandler",
+            "SuppressWarnings": "PatchesGame"
+        },
+
+        /*********
+        ** Common dependencies for friendly errors
+        *********/
+        "Advanced Location Loader": {
+            "ID": "Entoarox.AdvancedLocationLoader",
+            "Default | UpdateKey": "Nexus:2270"
+        },
+
+        "Content Patcher": {
+            "ID": "Pathoschild.ContentPatcher",
+            "Default | UpdateKey": "Nexus:1915"
+        },
+
+        "Custom Farming Redux": {
+            "ID": "Platonymous.CustomFarming",
+            "Default | UpdateKey": "Nexus:991"
+        },
+
+        "Custom Shirts": {
+            "ID": "Platonymous.CustomShirts",
+            "Default | UpdateKey": "Nexus:2416"
+        },
+
+        "Entoarox Framework": {
+            "ID": "Entoarox.EntoaroxFramework",
+            "Default | UpdateKey": "Nexus:2269"
+        },
+
+        "JSON Assets": {
+            "ID": "spacechase0.JsonAssets",
+            "Default | UpdateKey": "Nexus:1720"
+        },
+
+        "Mail Framework": {
+            "ID": "DIGUS.MailFrameworkMod",
+            "Default | UpdateKey": "Nexus:1536"
+        },
+
+        "MTN": {
+            "ID": "SgtPickles.MTN",
+            "Default | UpdateKey": "Nexus:2256"
+        },
+
+        "Py
