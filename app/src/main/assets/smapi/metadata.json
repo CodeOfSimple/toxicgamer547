@@ -1,0 +1,9 @@
+{
+    /**
+     * Metadata about some SMAPI mods used in compatibility, update, and dependency checks. This
+     * field shouldn't be edited by players in most cases.
+     *
+     *
+     * Standard fields
+     * ===============
+     * The predefined fields are documented below (only 'ID' is required). Each entry's k
