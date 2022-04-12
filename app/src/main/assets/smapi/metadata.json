@@ -249,4 +249,41 @@
         },
         "Fix Animal Tools": {
             "ID": "bcmpinc.FixAnimalTools",
-   
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Grass Growth": {
+            "ID": "bcmpinc.GrassGrowth",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Harvest With Scythe (bcmpinc)": {
+            "ID": "bcmpinc.HarvestWithScythe",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Movement Speed": {
+            "ID": "bcmpinc.MovementSpeed",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "PlatoTK": {
+            "ID": "Platonymous.PlatoTK",
+            "~1.9.3 | Status": "AssumeBroken",
+            "~1.9.3 | StatusReasonDetails": "fails to load with 'ReflectionTypeLoadException' error"
+        },
+        "Tilled Soil Decay": {
+            "ID": "bcmpinc.TilledSoilDecay",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Tree Spread": {
+            "ID": "bcmpinc.TreeSpread",
+            "~4.2.0 | Status": "AssumeBroken",
+            "~4.2.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Wear More Rings": {
+            "ID": "bcmpinc.WearMoreRings",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        }
