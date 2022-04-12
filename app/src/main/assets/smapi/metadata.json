@@ -206,4 +206,47 @@
         "Stardew Hack": {
             "ID": "bcmpinc.StardewHack",
             "~5.1.0 | Status": "AssumeBroken",
-       
+            "~5.1.0 | StatusReasonDetails": "runtime error when initializing due to an API change between .NET Framework and .NET 5"
+        },
+        "Stardew Valley Expanded": {
+            "ID": "FlashShifter.SVECode",
+            "~1.13.11 | Status": "AssumeBroken",
+            "~1.13.11 | StatusReasonDetails": "fails to load due to an outdated implementation of the game's 'ICue' interface"
+        },
+        "Stardew Web": {
+            "ID": "prism99.stardewweb",
+            "~0.7.2 | Status": "AssumeBroken",
+            "~0.7.2 | StatusReasonDetails": "requires the 'System.Drawing' API, which isn't available in .NET 5"
+        },
+        "Sundrop City": {
+            "ID": "SundropTeam.SundropCity",
+            "~0.4.1 | Status": "AssumeBroken",
+            "~0.4.1 | StatusReasonDetails": "causes freeze during game launch"
+        },
+        "UI Info Suite": {
+            "ID": "Cdaragorn.UiInfoSuite",
+            "~2.0.0 | Status": "AssumeBroken",
+            "~2.0.0 | StatusReasonDetails": "causes lag, errors, or crashes in-game"
+        },
+        "Video Player": {
+            "ID": "aedenthorn.VideoPlayer",
+            "~0.2.5 | Status": "AssumeBroken",
+            "~0.2.5 | StatusReasonDetails": "requires an XNA Framework API that's not available in MonoGame and causes a crash to desktop"
+        },
+
+        /*********
+        ** Broke in SMAPI 3.12.0
+        *********/
+        "Always Scroll Map": {
+            "ID": "bcmpinc.AlwaysScrollMap",
+            "~4.1.0 | Status": "AssumeBroken",
+            "~4.1.0 | StatusReasonDetails": "causes Harmony patching errors for other mods" // requested by the mod author
+        },
+        "Big Silo": {
+            "ID": "lperkins2.BigSilo",
+            "~0.0.3 | Status": "AssumeBroken",
+            "~0.0.3 | StatusReasonDetails": "not compatible with Harmony 2.x"
+        },
+        "Fix Animal Tools": {
+            "ID": "bcmpinc.FixAnimalTools",
+   
