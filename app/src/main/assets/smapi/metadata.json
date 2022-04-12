@@ -162,4 +162,48 @@
         },
 
         /*********
-        ** Broke in
+        ** Broke in SMAPI 3.14.0
+        *********/
+        "CFAutomate": {
+            "ID": "Platonymous.CFAutomate",
+            "~2.12.11 | Status": "AssumeBroken",
+            "~2.12.11 | StatusReasonDetails": "causes runtime errors in newer versions of Automate"
+        },
+        "Dynamic Game Assets": {
+            "ID": "spacechase0.DynamicGameAssets",
+            "~1.4.1 | Status": "AssumeBroken",
+            "~1.4.1 | StatusReasonDetails": "causes runtime errors fixed in Dynamic Game Assets 1.4.2"
+        },
+
+        /*********
+        ** Broke in SDV 1.5.5
+        *********/
+        "Animated Portrait Framework": {
+            "ID": "akai.AnimatedPortrait",
+            "~1.0.0 | Status": "AssumeBroken",
+            "~1.0.0 | StatusReasonDetails": "requires the 'System.Windows.Forms' API, which isn't available in .NET 5"
+        },
+        "Audio Devices": {
+            "ID": "maxvollmer.audiodevices",
+            "~3.0.1 | Status": "AssumeBroken",
+            "~3.0.1 | StatusReasonDetails": "fails to load due to an outdated implementation of the game's 'IAudioEngine' interface"
+        },
+        "Battery Warning": {
+            "ID": "Husky110.BatteryWarningMod",
+            "~1.0.4 | Status": "AssumeBroken",
+            "~1.0.4 | StatusReasonDetails": "requires the 'System.Management' API, which is a different DLL in .NET 5"
+        },
+        "Junimo Studio": {
+            "ID": "Becks723.JunimoStudio",
+            "~2.0.1 | Status": "AssumeBroken",
+            "~2.0.1 | StatusReasonDetails": "requires 'Microsoft.Xna.Framework.Audio.AudioCategory' which doesn't exist in MonoGame"
+        },
+        "Skip Intro": {
+            "ID": "Pathoschild.SkipIntro",
+            "~1.9.1 | Status": "AssumeBroken",
+            "~1.9.1 | StatusReasonDetails": "causes freeze during game launch"
+        },
+        "Stardew Hack": {
+            "ID": "bcmpinc.StardewHack",
+            "~5.1.0 | Status": "AssumeBroken",
+       
