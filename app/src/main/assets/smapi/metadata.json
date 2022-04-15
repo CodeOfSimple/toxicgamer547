@@ -457,4 +457,52 @@
         "Ace's Expanded Caves - Default Cave": {
             "ID": "Acerbicon.AECdefault",
             "Default | UpdateKey": "Nexus:2131",
-            "~1.2.2  | Statu
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Ace's Expanded Caves - Desert Cave": {
+            "ID": "Acerbicon.AECdesert",
+            "Default | UpdateKey": "Nexus:2131",
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Ace's Expanded Caves - Ice Cave": {
+            "ID": "Acerbicon.AECice",
+            "Default | UpdateKey": "Nexus:2131",
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Ace's Expanded Caves - Lava Cave": {
+            "ID": "Acerbicon.AEClava",
+            "Default | UpdateKey": "Nexus:2131",
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Ace's Expanded Caves - Slime Cave": {
+            "ID": "Acerbicon.AECslime",
+            "Default | UpdateKey": "Nexus:2131",
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Critical Crow": {
+            "ID": "leonary.CRCROWS",
+            "Default | UpdateKey": "Nexus:2663",
+            "~1.2.2  | Status": "AssumeBroken",
+            "~1.2.2  | StatusReasonDetails": "removes newer content from the TileSheets/Craftables asset"
+        },
+
+        "Green Pastures Farm": {
+            "ID": "bugbuddy.GreenPasturesFarm",
+            "Default | UpdateKey": "Nexus:2326",
+            "~1.0    | Status": "AssumeBroken",
+            "~1.0    | StatusReasonDetails": "references the deleted Content/weapons asset"
+        },
+
+        "Immersive Farm 2": {
+            "ID": "zander.immersivefarm2",
+            "~2.0.1 | Status"
