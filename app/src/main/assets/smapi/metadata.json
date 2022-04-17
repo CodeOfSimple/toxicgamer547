@@ -505,4 +505,51 @@
 
         "Immersive Farm 2": {
             "ID": "zander.immersivefarm2",
-            "~2.0.1 | Status"
+            "~2.0.1 | Status": "AssumeBroken",
+            "~2.0.1 | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        "Karmylla's Immersive Map Edits": {
+            "ID": "Karmylla.ImmersiveMapEdits",
+            "Default | UpdateKey": "Nexus:1149",
+            "~2.4    | Status": "AssumeBroken",
+            "~2.4    | StatusReasonDetails": "references the deleted Content/weapons asset"
+        },
+
+        "Secret Gardens Greenhouse": {
+            "ID": "jessebot.secretgardens",
+            "Default | UpdateKey": "Nexus:3067",
+            "~2.0.1  | Status": "AssumeBroken",
+            "~2.0.1  | StatusReasonDetails": "references the deleted Content/Mine asset"
+        },
+
+        /*********
+        ** Broke circa SDV 1.3
+        *********/
+        "Canon-Friendly Dialogue Expansion": {
+            "ID": "gizzymo.canonfriendlyexpansion",
+            "~1.1.1 | Status": "AssumeBroken",
+            "~1.1.1 | StatusReasonDetails": "causes a save crash on certain dates"
+        },
+
+        "Everytime Submarine": {
+            "ID": "MustafaDemirel.EverytimeSubmarine",
+            "~1.0.0 | Status": "AssumeBroken",
+            "~1.1.1 | StatusReasonDetails": "breaks player saves if their beach bridge is fixed"
+        },
+
+        "BJS Night Sounds": {
+            "ID": "BunnyJumps.BJSNightSounds",
+            "~1.0.0 | Status": "AssumeBroken",
+            "~1.0.0 | StatusReasonDetails": "runtime errors with Harmony 1.2.0.1 in SMAPI 2.8+"
+        },
+
+        "Fishing Adjust": {
+            "ID": "shuaiz.FishingAdjustMod",
+            "~2.0.1 | Status": "AssumeBroken",
+            "~2.0.1 | StatusReasonDetails": "fails with 'method not found' error for 'Void Harmony.HarmonyInstance.Patch(System.Reflection.MethodBase, Harmony.HarmonyMethod, Harmony.HarmonyMethod, Harmony.HarmonyMethod)'"
+        },
+
+        "Fishing Automaton": {
+            "ID": "Drynwynn.FishingAutomaton",
+            "~1.1 | Status
