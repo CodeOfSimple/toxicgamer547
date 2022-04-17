@@ -552,4 +552,31 @@
 
         "Fishing Automaton": {
             "ID": "Drynwynn.FishingAutomaton",
-            "~1.1 | Status
+            "~1.1 | Status": "AssumeBroken",
+            "~1.1 | StatusReasonDetails": "runtime errors with Harmony 1.2.0.1 in SMAPI 2.8+"
+        },
+
+        "More Silo Storage": {
+            "ID": "OrneryWalrus.MoreSiloStorage",
+            "~1.0.1 | Status": "AssumeBroken"
+        },
+
+        "No Added Flying Mine Monsters": {
+            "ID": "Drynwynn.NoAddedFlyingMineMonsters",
+            "~1.1 | Status": "AssumeBroken",
+            "~1.1 | StatusReasonDetails": "runtime errors with Harmony 1.2.0.1 in SMAPI 2.8+"
+        },
+
+        "Server Bookmarker": {
+            "ID": "Ilyaki.ServerBookmarker",
+            "~1.0.0 | Status": "AssumeBroken",
+            "~1.0.0 | StatusReasonDetails": "runtime errors in Stardew Valley 1.3.29"
+        },
+
+        "Stephan's Lots of Crops": {
+            "ID": "stephansstardewcrops",
+            "~1.1 | Status": "AssumeBroken",
+            "~1.1 | StatusReasonDetails": "causes errors due to overwritten Stardew Valley 1.3 items"
+        }
+    }
+}

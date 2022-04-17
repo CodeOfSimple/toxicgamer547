@@ -1,0 +1,18 @@
+
+[
+  {
+    "targetPath": "smapi-internal/",
+    "assetPath": "smapi/*.json",
+    "origin": 0
+  },
+  {
+    "targetPath": "smapi-internal/i18n/",
+    "assetPath": "smapi/i18n/*.json",
+    "origin": 0
+  },
+  {
+    "targetPath": "smapi-internal/",
+    "assetPath": "assemblies/*.dll",
+    "origin": 1
+  }
+]
