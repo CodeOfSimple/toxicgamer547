@@ -40,4 +40,50 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-im
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * APK Signer Lineage.
+ *
+ * <p>The signer lineage contains a history of signing certificates with each ancestor attesting to
+ * the validity of its descendant.  Each additional descendant represents a new identity that can be
+ * used to sign an APK, and each generation has accompanying attributes which represent how the
+ * APK would like to view the older signing certificates, specifically how they should be trusted in
+ * certain situations.
+ *
+ * <p> Its primary use is to enable APK Signing Certificate Rotation.  The Android platform verifies
+ * the APK Signer Lineage, and if the current signing certificate for the APK is in the Signer
+ * Lineage, and the Lineage contains the certificate the platform associates with the APK, it will
+ * allow upgrades to the new certificate.
+ *
+ * @see <a href="https://source.android.com/security/apksigning/index.html">Application Signing</a>
+ */
+public class SigningCertificateLineage {
+
+    public final static int MAGIC = 0x3eff39d1;
+
+    private final static int FIRST_VERSION = 1;
+
+    private static final int CURRENT_VERSION = FIRST_VERSION;
+
+    /** accept data from already installed pkg with this cert */
+    private static final int PAST_CERT_INSTALLED_DATA = 1;
+
+    /** accept sharedUserId with pkg with this cert */
+    private static final int PAST_CERT_SHARED_USER_ID = 2;
+
+    /** grant SIGNATURE permissions to pkgs with this cert */
+    private static final int PAST_CERT_PERMISSION = 4;
+
+    /**
+     * Enable updates back to this certificate.  WARNING
