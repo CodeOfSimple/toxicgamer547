@@ -75,4 +75,8 @@ public final class Hints {
                 }
             }
         } catch (UnsupportedEncodingException ex) {
-    
+            throw new RuntimeException("UTF-8 must be supported", ex);
+        }
+        return pinPatterns;
+    }
+}
