@@ -22,4 +22,57 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public 
+public final class Hints {
+    /**
+     * Name of hint pattern asset file in APK.
+     */
+    public static final String PIN_HINT_ASSET_ZIP_ENTRY_NAME = "assets/com.android.hints.pins.txt";
+
+    /**
+     * Name of hint byte range data file in APK.  Keep in sync with PinnerService.java.
+     */
+    public static final String PIN_BYTE_RANGE_ZIP_ENTRY_NAME = "pinlist.meta";
+
+    private static int clampToInt(long value) {
+        return (int) Math.max(0, Math.min(value, Integer.MAX_VALUE));
+    }
+
+    public static final class ByteRange {
+        final long start;
+        final long end;
+
+        public ByteRange(long start, long end) {
+            this.start = start;
+            this.end = end;
+        }
+    }
+
+    /**
+     * Create a blob of bytes that PinnerService understands as a
+     * sequence of byte ranges to pin.
+     */
+    public static byte[] encodeByteRangeList(List<ByteRange> pinByteRanges) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(pinByteRanges.size() * 8);
+        DataOutputStream out = new DataOutputStream(bos);
+        try {
+            for (ByteRange pinByteRange : pinByteRanges) {
+                out.writeInt(clampToInt(pinByteRange.start));
+                out.writeInt(clampToInt(pinByteRange.end - pinByteRange.start));
+            }
+        } catch (IOException ex) {
+            throw new AssertionError("impossible", ex);
+        }
+        return bos.toByteArray();
+    }
+
+    public static ArrayList<Pattern> parsePinPatterns(byte[] patternBlob) {
+        ArrayList<Pattern> pinPatterns = new ArrayList<>();
+        try {
+            for (String rawLine : new String(patternBlob, "UTF-8").split("\n")) {
+                String line = rawLine.replaceFirst("#.*", "");  // # starts a comment
+                if (!("".equals(line))) {
+                    pinPatterns.add(Pattern.compile(line));
+                }
+            }
+        } catch (UnsupportedEncodingException ex) {
+    
