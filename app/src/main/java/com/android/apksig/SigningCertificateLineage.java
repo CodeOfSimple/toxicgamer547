@@ -86,4 +86,46 @@ public class SigningCertificateLineage {
     private static final int PAST_CERT_PERMISSION = 4;
 
     /**
-     * Enable updates back to this certificate.  WARNING
+     * Enable updates back to this certificate.  WARNING: this effectively removes any benefit of
+     * signing certificate changes, since a compromised key could retake control of an app even
+     * after change, and should only be used if there is a problem encountered when trying to ditch
+     * an older cert.
+     */
+    private static final int PAST_CERT_ROLLBACK = 8;
+
+    /**
+     * Preserve authenticator module-based access in AccountManager gated by signing certificate.
+     */
+    private static final int PAST_CERT_AUTH = 16;
+
+    private final int mMinSdkVersion;
+
+    /**
+     * The signing lineage is just a list of nodes, with the first being the original signing
+     * certificate and the most recent being the one with which the APK is to actually be signed.
+     */
+    private final List<SigningCertificateNode> mSigningLineage;
+
+    private SigningCertificateLineage(int minSdkVersion, List<SigningCertificateNode> list) {
+        mMinSdkVersion = minSdkVersion;
+        mSigningLineage = list;
+    }
+
+    private static SigningCertificateLineage createSigningLineage(
+            int minSdkVersion, SignerConfig parent, SignerCapabilities parentCapabilities,
+            SignerConfig child, SignerCapabilities childCapabilities)
+            throws CertificateEncodingException, InvalidKeyException, NoSuchAlgorithmException,
+            SignatureException {
+        SigningCertificateLineage signingCertificateLineage =
+                new SigningCertificateLineage(minSdkVersion, new ArrayList<>());
+        signingCertificateLineage =
+                signingCertificateLineage.spawnFirstDescendant(parent, parentCapabilities);
+        return signingCertificateLineage.spawnDescendant(parent, child, childCapabilities);
+    }
+
+    public static SigningCertificateLineage readFromFile(File file)
+            throws IOException {
+        if (file == null) {
+            throw new NullPointerException("file == null");
+        }
+        RandomAccessFile inputFile = n
