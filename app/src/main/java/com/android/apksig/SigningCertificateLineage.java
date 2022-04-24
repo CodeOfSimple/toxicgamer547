@@ -128,4 +128,46 @@ public class SigningCertificateLineage {
         if (file == null) {
             throw new NullPointerException("file == null");
         }
-        RandomAccessFile inputFile = n
+        RandomAccessFile inputFile = new RandomAccessFile(file, "r");
+        return readFromDataSource(DataSources.asDataSource(inputFile));
+    }
+
+    public static SigningCertificateLineage readFromDataSource(DataSource dataSource)
+            throws IOException {
+        if (dataSource == null) {
+            throw new NullPointerException("dataSource == null");
+        }
+        ByteBuffer inBuff = dataSource.getByteBuffer(0, (int) dataSource.size());
+        inBuff.order(ByteOrder.LITTLE_ENDIAN);
+        return read(inBuff);
+    }
+
+    /**
+     * Extracts a Signing Certificate Lineage from a v3 signer proof-of-rotation attribute.
+     *
+     * <note>
+     *     this may not give a complete representation of an APK's signing certificate history,
+     *     since the APK may have multiple signers corresponding to different platform versions.
+     *     Use <code> readFromApkFile</code> to handle this case.
+     * </note>
+     * @param attrValue
+     */
+    public static SigningCertificateLineage readFromV3AttributeValue(byte[] attrValue)
+            throws IOException {
+        List<SigningCertificateNode> parsedLineage =
+                V3SigningCertificateLineage.readSigningCertificateLineage(ByteBuffer.wrap(
+                        attrValue).order(ByteOrder.LITTLE_ENDIAN));
+        int minSdkVersion = calculateMinSdkVersion(parsedLineage);
+        return  new SigningCertificateLineage(minSdkVersion, parsedLineage);
+    }
+
+    /**
+     * Extracts a Signing Certificate Lineage from the proof-of-rotation attribute in the V3
+     * signature block of the provided APK File.
+     *
+     * @throws IllegalArgumentException if the provided APK does not contain a V3 signature block,
+     * or if the V3 signature block does not contain a valid lineage.
+     */
+    public static SigningCertificateLineage readFromApkFile(File apkFile)
+            throws IOException, ApkFormatException {
+        try (RandomAccessFile f = new RandomAccessFile(
