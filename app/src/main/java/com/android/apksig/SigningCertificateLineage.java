@@ -210,3 +210,46 @@ public class SigningCertificateLineage {
         ByteBuffer signers = getLengthPrefixedSlice(signatureInfo.signatureBlock);
         List<SigningCertificateLineage> lineages = new ArrayList<>(1);
         while (signers.hasRemaining()) {
+            ByteBuffer signer = getLengthPrefixedSlice(signers);
+            ByteBuffer signedData = getLengthPrefixedSlice(signer);
+            try {
+                SigningCertificateLineage lineage = readFromSignedData(signedData);
+                lineages.add(lineage);
+            } catch (IllegalArgumentException ignored) {
+                // The current signer block does not contain a valid lineage, but it is possible
+                // another block will.
+            }
+        }
+        SigningCertificateLineage result;
+        if (lineages.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The provided APK does not contain a valid lineage.");
+        } else if (lineages.size() > 1) {
+            result = consolidateLineages(lineages);
+        } else {
+            result = lineages.get(0);
+        }
+        return result;
+    }
+
+    /**
+     * Extracts a Signing Certificate Lineage from the proof-of-rotation attribute in the provided
+     * signed data portion of a signer in a V3 signature block.
+     *
+     * @throws IllegalArgumentException if the provided signed data does not contain a valid
+     * lineage.
+     */
+    public static SigningCertificateLineage readFromSignedData(ByteBuffer signedData)
+            throws IOException, ApkFormatException {
+        // FORMAT:
+        //   * length-prefixed sequence of length-prefixed digests:
+        //   * length-prefixed sequence of certificates:
+        //     * length-prefixed bytes: X.509 certificate (ASN.1 DER encoded).
+        //   * uint-32: minSdkVersion
+        //   * uint-32: maxSdkVersion
+        //   * length-prefixed sequence of length-prefixed additional attributes:
+        //     * uint32: ID
+        //     * (length - 4) bytes: value
+        //     * uint32: Proof-of-rotation ID: 0x3ba06f8c
+        //     * length-prefixed proof-of-rotation structure
+        // consume the digests through the maxSdkVersion to reach the lineage 
