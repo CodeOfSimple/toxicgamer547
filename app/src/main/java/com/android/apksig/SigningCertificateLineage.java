@@ -170,4 +170,43 @@ public class SigningCertificateLineage {
      */
     public static SigningCertificateLineage readFromApkFile(File apkFile)
             throws IOException, ApkFormatException {
-        try (RandomAccessFile f = new RandomAccessFile(
+        try (RandomAccessFile f = new RandomAccessFile(apkFile, "r")) {
+            DataSource apk = DataSources.asDataSource(f, 0, f.length());
+            return readFromApkDataSource(apk);
+        }
+    }
+
+    /**
+     * Extracts a Signing Certificate Lineage from the proof-of-rotation attribute in the V3
+     * signature block of the provided APK DataSource.
+     *
+     * @throws IllegalArgumentException if the provided APK does not contain a V3 signature block,
+     * or if the V3 signature block does not contain a valid lineage.
+     */
+    public static SigningCertificateLineage readFromApkDataSource(DataSource apk)
+            throws IOException, ApkFormatException {
+        SignatureInfo signatureInfo;
+        try {
+            ApkUtils.ZipSections zipSections = ApkUtils.findZipSections(apk);
+            ApkSigningBlockUtils.Result result = new ApkSigningBlockUtils.Result(
+                    ApkSigningBlockUtils.VERSION_APK_SIGNATURE_SCHEME_V3);
+            signatureInfo =
+                    ApkSigningBlockUtils.findSignature(apk, zipSections,
+                            V3SchemeSigner.APK_SIGNATURE_SCHEME_V3_BLOCK_ID, result);
+        } catch (ZipFormatException e) {
+            throw new ApkFormatException(e.getMessage());
+        } catch (ApkSigningBlockUtils.SignatureNotFoundException e) {
+            throw new IllegalArgumentException(
+                    "The provided APK does not contain a valid V3 signature block.");
+        }
+
+        // FORMAT:
+        // * length-prefixed sequence of length-prefixed signers:
+        //   * length-prefixed signed data
+        //   * minSDK
+        //   * maxSDK
+        //   * length-prefixed sequence of length-prefixed signatures
+        //   * length-prefixed public key
+        ByteBuffer signers = getLengthPrefixedSlice(signatureInfo.signatureBlock);
+        List<SigningCertificateLineage> lineages = new ArrayList<>(1);
+        while (signers.hasRemaining()) {
