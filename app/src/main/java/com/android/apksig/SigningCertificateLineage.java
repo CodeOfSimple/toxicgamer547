@@ -366,4 +366,46 @@ public class SigningCertificateLineage {
         ApkSigningBlockUtils.SignerConfig newSignerConfig =
                 new ApkSigningBlockUtils.SignerConfig();
         newSignerConfig.privateKey = parent.getPrivateKey();
-        newSign
+        newSignerConfig.certificates = certificates;
+        newSignerConfig.signatureAlgorithms = Collections.singletonList(signatureAlgorithm);
+
+        // sign it
+        List<Pair<Integer, byte[]>> signatures =
+                ApkSigningBlockUtils.generateSignaturesOverData(newSignerConfig, signedData);
+
+        // finally, add it to our lineage
+        SignatureAlgorithm sigAlgorithm = SignatureAlgorithm.findById(signatures.get(0).getFirst());
+        byte[] signature = signatures.get(0).getSecond();
+        currentGeneration.sigAlgorithm = sigAlgorithm;
+        SigningCertificateNode childNode =
+                new SigningCertificateNode(
+                        child.getCertificate(), sigAlgorithm, null,
+                        signature, childCapabilities.getFlags());
+        List<SigningCertificateNode> lineageCopy = new ArrayList<>(mSigningLineage);
+        lineageCopy.add(childNode);
+        return new SigningCertificateLineage(mMinSdkVersion, lineageCopy);
+    }
+
+    /**
+     * The number of signing certificates in the lineage, including the current signer, which means
+     * this value can also be used to V2determine the number of signing certificate rotations by
+     * subtracting 1.
+     */
+    public int size() {
+        return mSigningLineage.size();
+    }
+
+    private SignatureAlgorithm getSignatureAlgorithm(SignerConfig parent)
+            throws InvalidKeyException {
+        PublicKey publicKey = parent.getCertificate().getPublicKey();
+
+        // TODO switch to one signature algorithm selection, or add support for multiple algorithms
+        List<SignatureAlgorithm> algorithms = V3SchemeSigner.getSuggestedSignatureAlgorithms(
+                publicKey, mMinSdkVersion, false /* padding support */);
+        return algorithms.get(0);
+    }
+
+    private SigningCertificateLineage spawnFirstDescendant(
+            SignerConfig parent, SignerCapabilities signerCapabilities) {
+        if (!mSigningLineage.isEmpty()) {
+            throw new
