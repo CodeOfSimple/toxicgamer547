@@ -294,4 +294,41 @@ public class SigningCertificateLineage {
         if (dataSink == null) {
             throw new NullPointerException("dataSink == null");
         }
-        dataS
+        dataSink.consume(write());
+    }
+
+    /**
+     * Add a new signing certificate to the lineage.  This effectively creates a signing certificate
+     * rotation event, forcing APKs which include this lineage to be signed by the new signer. The
+     * flags associated with the new signer are set to a default value.
+     *
+     * @param parent current signing certificate of the containing APK
+     * @param child new signing certificate which will sign the APK contents
+     */
+    public SigningCertificateLineage spawnDescendant(SignerConfig parent, SignerConfig child)
+            throws CertificateEncodingException, InvalidKeyException, NoSuchAlgorithmException,
+            SignatureException {
+        if (parent == null || child == null) {
+            throw new NullPointerException("can't add new descendant to lineage with null inputs");
+        }
+        SignerCapabilities signerCapabilities = new SignerCapabilities.Builder().build();
+        return spawnDescendant(parent, child, signerCapabilities);
+    }
+
+    /**
+     * Add a new signing certificate to the lineage.  This effectively creates a signing certificate
+     * rotation event, forcing APKs which include this lineage to be signed by the new signer.
+     *
+     * @param parent current signing certificate of the containing APK
+     * @param child new signing certificate which will sign the APK contents
+     * @param childCapabilities flags
+     */
+    public SigningCertificateLineage spawnDescendant(
+            SignerConfig parent, SignerConfig child, SignerCapabilities childCapabilities)
+            throws CertificateEncodingException, InvalidKeyException,
+            NoSuchAlgorithmException, SignatureException {
+        if (parent == null) {
+            throw new NullPointerException("parent == null");
+        }
+        if (child == null) {
+            throw new NullPointerException("child =
