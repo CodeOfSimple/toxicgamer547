@@ -252,4 +252,46 @@ public class SigningCertificateLineage {
         //     * (length - 4) bytes: value
         //     * uint32: Proof-of-rotation ID: 0x3ba06f8c
         //     * length-prefixed proof-of-rotation structure
-        // consume the digests through the maxSdkVersion to reach the lineage 
+        // consume the digests through the maxSdkVersion to reach the lineage in the attributes
+        getLengthPrefixedSlice(signedData);
+        getLengthPrefixedSlice(signedData);
+        signedData.getInt();
+        signedData.getInt();
+        // iterate over the additional attributes adding any lineages to the List
+        ByteBuffer additionalAttributes = getLengthPrefixedSlice(signedData);
+        List<SigningCertificateLineage> lineages = new ArrayList<>(1);
+        while (additionalAttributes.hasRemaining()) {
+            ByteBuffer attribute = getLengthPrefixedSlice(additionalAttributes);
+            int id = attribute.getInt();
+            if (id == V3SchemeSigner.PROOF_OF_ROTATION_ATTR_ID) {
+                byte[] value = ByteBufferUtils.toByteArray(attribute);
+                SigningCertificateLineage lineage = readFromV3AttributeValue(value);
+                lineages.add(lineage);
+            }
+        }
+        SigningCertificateLineage result;
+        // There should only be a single attribute with the lineage, but if there are multiple then
+        // attempt to consolidate the lineages.
+        if (lineages.isEmpty()) {
+            throw new IllegalArgumentException("The signed data does not contain a valid lineage.");
+        } else if (lineages.size() > 1) {
+            result = consolidateLineages(lineages);
+        } else {
+            result = lineages.get(0);
+        }
+        return result;
+    }
+
+    public void writeToFile(File file) throws IOException {
+        if (file == null) {
+            throw new NullPointerException("file == null");
+        }
+        RandomAccessFile outputFile = new RandomAccessFile(file, "rw");
+        writeToDataSink(new RandomAccessFileDataSink(outputFile));
+    }
+
+    public void writeToDataSink(DataSink dataSink) throws IOException {
+        if (dataSink == null) {
+            throw new NullPointerException("dataSink == null");
+        }
+        dataS
