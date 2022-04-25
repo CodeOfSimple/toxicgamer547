@@ -331,4 +331,39 @@ public class SigningCertificateLineage {
             throw new NullPointerException("parent == null");
         }
         if (child == null) {
-            throw new NullPointerException("child =
+            throw new NullPointerException("child == null");
+        }
+        if (childCapabilities == null) {
+            throw new NullPointerException("childCapabilities == null");
+        }
+        if (mSigningLineage.isEmpty()) {
+            throw new IllegalArgumentException("Cannot spawn descendant signing certificate on an"
+                    + " empty SigningCertificateLineage: no parent node");
+        }
+
+        // make sure that the parent matches our newest generation (leaf node/sink)
+        SigningCertificateNode currentGeneration = mSigningLineage.get(mSigningLineage.size() - 1);
+        if (!Arrays.equals(currentGeneration.signingCert.getEncoded(),
+                parent.getCertificate().getEncoded())) {
+            throw new IllegalArgumentException("SignerConfig Certificate containing private key"
+                    + " to sign the new SigningCertificateLineage record does not match the"
+                    + " existing most recent record");
+        }
+
+        // create data to be signed, including the algorithm we're going to use
+        SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(parent);
+        ByteBuffer prefixedSignedData = ByteBuffer.wrap(
+                V3SigningCertificateLineage.encodeSignedData(
+                        child.getCertificate(), signatureAlgorithm.getId()));
+        prefixedSignedData.position(4);
+        ByteBuffer signedDataBuffer = ByteBuffer.allocate(prefixedSignedData.remaining());
+        signedDataBuffer.put(prefixedSignedData);
+        byte[] signedData = signedDataBuffer.array();
+
+        // create SignerConfig to do the signing
+        List<X509Certificate> certificates = new ArrayList<>(1);
+        certificates.add(parent.getCertificate());
+        ApkSigningBlockUtils.SignerConfig newSignerConfig =
+                new ApkSigningBlockUtils.SignerConfig();
+        newSignerConfig.privateKey = parent.getPrivateKey();
+        newSign
