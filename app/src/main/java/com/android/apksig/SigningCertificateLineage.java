@@ -408,4 +408,43 @@ public class SigningCertificateLineage {
     private SigningCertificateLineage spawnFirstDescendant(
             SignerConfig parent, SignerCapabilities signerCapabilities) {
         if (!mSigningLineage.isEmpty()) {
-            throw new
+            throw new IllegalStateException("SigningCertificateLineage already has its first node");
+        }
+
+        // check to make sure that the public key for the first node is acceptable for our minSdk
+        try {
+            getSignatureAlgorithm(parent);
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException("Algorithm associated with first signing certificate"
+                    + " invalid on desired platform versions", e);
+        }
+
+        // create "fake" signed data (there will be no signature over it, since there is no parent
+        SigningCertificateNode firstNode = new SigningCertificateNode(
+                parent.getCertificate(), null, null, new byte[0], signerCapabilities.getFlags());
+        return new SigningCertificateLineage(mMinSdkVersion, Collections.singletonList(firstNode));
+    }
+
+    private static SigningCertificateLineage read(ByteBuffer inputByteBuffer)
+            throws IOException {
+        ApkSigningBlockUtils.checkByteOrderLittleEndian(inputByteBuffer);
+        if (inputByteBuffer.remaining() < 8) {
+            throw new IllegalArgumentException(
+                    "Improper SigningCertificateLineage format: insufficient data for header.");
+        }
+
+        if (inputByteBuffer.getInt() != MAGIC) {
+            throw new IllegalArgumentException(
+                    "Improper SigningCertificateLineage format: MAGIC header mismatch.");
+        }
+        return read(inputByteBuffer, inputByteBuffer.getInt());
+    }
+
+    private static SigningCertificateLineage read(ByteBuffer inputByteBuffer, int version)
+            throws IOException {
+        switch (version) {
+            case FIRST_VERSION:
+                try {
+                    List<SigningCertificateNode> nodes =
+                            V3SigningCertificateLineage.readSigningCertificateLineage(
+  
