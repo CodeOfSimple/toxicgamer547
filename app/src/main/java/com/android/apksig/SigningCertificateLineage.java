@@ -447,4 +447,48 @@ public class SigningCertificateLineage {
                 try {
                     List<SigningCertificateNode> nodes =
                             V3SigningCertificateLineage.readSigningCertificateLineage(
-  
+                                    getLengthPrefixedSlice(inputByteBuffer));
+                    int minSdkVersion = calculateMinSdkVersion(nodes);
+                    return new SigningCertificateLineage(minSdkVersion, nodes);
+                } catch (ApkFormatException e) {
+                    // unable to get a proper length-prefixed lineage slice
+                    throw new IOException("Unable to read list of signing certificate nodes in "
+                            + "SigningCertificateLineage", e);
+                }
+            default:
+                throw new IllegalArgumentException(
+                        "Improper SigningCertificateLineage format: unrecognized version.");
+        }
+    }
+
+    private static int calculateMinSdkVersion(List<SigningCertificateNode> nodes) {
+        if (nodes == null) {
+            throw new IllegalArgumentException("Can't calculate minimum SDK version of null nodes");
+        }
+        int minSdkVersion = AndroidSdkVersion.P; // lineage introduced in P
+        for (SigningCertificateNode node : nodes) {
+            if (node.sigAlgorithm != null) {
+                int nodeMinSdkVersion = node.sigAlgorithm.getMinSdkVersion();
+                if (nodeMinSdkVersion > minSdkVersion) {
+                    minSdkVersion = nodeMinSdkVersion;
+                }
+            }
+        }
+        return minSdkVersion;
+    }
+
+    private ByteBuffer write() {
+        byte[] encodedLineage =
+                V3SigningCertificateLineage.encodeSigningCertificateLineage(mSigningLineage);
+        int payloadSize = 4 + 4 + 4 + encodedLineage.length;
+        ByteBuffer result = ByteBuffer.allocate(payloadSize);
+        result.order(ByteOrder.LITTLE_ENDIAN);
+        result.putInt(MAGIC);
+        result.putInt(CURRENT_VERSION);
+        result.putInt(encodedLineage.length);
+        result.put(encodedLineage);
+        result.flip();
+        return result;
+    }
+
+    public byte[] generateV3S
