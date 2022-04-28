@@ -531,4 +531,53 @@ public class SigningCertificateLineage {
             throw new IllegalArgumentException("SignerConfigs supplied which are not present in the"
                     + " SigningCertificateLineage");
         }
-        re
+        return sortedSignerConfigs;
+    }
+
+    /**
+     * Returns the SignerCapabilities for the signer in the lineage that matches the provided
+     * config.
+     */
+    public SignerCapabilities getSignerCapabilities(SignerConfig config) {
+        if (config == null) {
+            throw new NullPointerException("config == null");
+        }
+
+        X509Certificate cert = config.getCertificate();
+        return getSignerCapabilities(cert);
+    }
+
+    /**
+     * Returns the SignerCapabilities for the signer in the lineage that matches the provided
+     * certificate.
+     */
+    public SignerCapabilities getSignerCapabilities(X509Certificate cert) {
+        if (cert == null) {
+            throw new NullPointerException("cert == null");
+        }
+
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            SigningCertificateNode lineageNode = mSigningLineage.get(i);
+            if (lineageNode.signingCert.equals(cert)) {
+                int flags = lineageNode.flags;
+                return new SignerCapabilities.Builder(flags).build();
+            }
+        }
+
+        // the provided signer certificate was not found in the lineage
+        throw new IllegalArgumentException("Certificate (" + cert.getSubjectDN()
+                + ") not found in the SigningCertificateLineage");
+    }
+
+    /**
+     * Updates the SignerCapabilities for the signer in the lineage that matches the provided
+     * config. Only those capabilities that have been modified through the setXX methods will be
+     * updated for the signer to prevent unset default values from being applied.
+     */
+    public void updateSignerCapabilities(SignerConfig config, SignerCapabilities capabilities) {
+        if (config == null) {
+            throw new NullPointerException("config == null");
+        }
+
+        X509Certificate cert = config.getCertificate();
+        for (int i = 0; i < mSigningLineage.size(); i++) 
