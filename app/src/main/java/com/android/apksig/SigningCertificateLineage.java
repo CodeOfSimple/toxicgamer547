@@ -491,4 +491,44 @@ public class SigningCertificateLineage {
         return result;
     }
 
-    public byte[] generateV3S
+    public byte[] generateV3SignerAttribute() {
+        // FORMAT (little endian):
+        // * length-prefixed bytes: attribute pair
+        //   * uint32: ID
+        //   * bytes: value - encoded V3 SigningCertificateLineage
+        byte[] encodedLineage =
+                V3SigningCertificateLineage.encodeSigningCertificateLineage(mSigningLineage);
+        int payloadSize = 4 + 4 + encodedLineage.length;
+        ByteBuffer result = ByteBuffer.allocate(payloadSize);
+        result.order(ByteOrder.LITTLE_ENDIAN);
+        result.putInt(4 + encodedLineage.length);
+        result.putInt(V3SchemeSigner.PROOF_OF_ROTATION_ATTR_ID);
+        result.put(encodedLineage);
+        return result.array();
+    }
+
+    public List<DefaultApkSignerEngine.SignerConfig> sortSignerConfigs(
+            List<DefaultApkSignerEngine.SignerConfig> signerConfigs) {
+        if (signerConfigs == null) {
+            throw new NullPointerException("signerConfigs == null");
+        }
+
+        // not the most elegant sort, but we expect signerConfigs to be quite small (1 or 2 signers
+        // in most cases) and likely already sorted, so not worth the overhead of doing anything
+        // fancier
+        List<DefaultApkSignerEngine.SignerConfig> sortedSignerConfigs =
+                new ArrayList<>(signerConfigs.size());
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            for (int j = 0; j < signerConfigs.size(); j++) {
+                DefaultApkSignerEngine.SignerConfig config = signerConfigs.get(j);
+                if (mSigningLineage.get(i).signingCert.equals(config.getCertificates().get(0))) {
+                    sortedSignerConfigs.add(config);
+                    break;
+                }
+            }
+        }
+        if (sortedSignerConfigs.size() != signerConfigs.size()) {
+            throw new IllegalArgumentException("SignerConfigs supplied which are not present in the"
+                    + " SigningCertificateLineage");
+        }
+        re
