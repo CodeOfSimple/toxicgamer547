@@ -580,4 +580,57 @@ public class SigningCertificateLineage {
         }
 
         X509Certificate cert = config.getCertificate();
-        for (int i = 0; i < mSigningLineage.size(); i++) 
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            SigningCertificateNode lineageNode = mSigningLineage.get(i);
+            if (lineageNode.signingCert.equals(cert)) {
+                int flags = lineageNode.flags;
+                SignerCapabilities newCapabilities = new SignerCapabilities.Builder(
+                        flags).setCallerConfiguredCapabilities(capabilities).build();
+                lineageNode.flags = newCapabilities.getFlags();
+                return;
+            }
+        }
+
+        // the provided signer config was not found in the lineage
+        throw new IllegalArgumentException("Certificate (" + cert.getSubjectDN()
+                + ") not found in the SigningCertificateLineage");
+    }
+
+    /**
+     * Returns a list containing all of the certificates in the lineage.
+     */
+    public List<X509Certificate> getCertificatesInLineage() {
+        List<X509Certificate> certs = new ArrayList<>();
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            X509Certificate cert = mSigningLineage.get(i).signingCert;
+            certs.add(cert);
+        }
+        return certs;
+    }
+
+    /**
+     * Returns {@code true} if the specified config is in the lineage.
+     */
+    public boolean isSignerInLineage(SignerConfig config) {
+        if (config == null) {
+            throw new NullPointerException("config == null");
+        }
+
+        X509Certificate cert = config.getCertificate();
+        return isCertificateInLineage(cert);
+    }
+
+    /**
+     * Returns {@code true} if the specified certificate is in the lineage.
+     */
+    public boolean isCertificateInLineage(X509Certificate cert) {
+        if (cert == null) {
+            throw new NullPointerException("cert == null");
+        }
+
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            if (mSigningLineage.get(i).signingCert.equals(cert)) {
+                return true;
+            }
+        }
+  
