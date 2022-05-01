@@ -633,4 +633,44 @@ public class SigningCertificateLineage {
                 return true;
             }
         }
-  
+        return false;
+    }
+
+    private static int calculateDefaultFlags() {
+        return PAST_CERT_INSTALLED_DATA | PAST_CERT_PERMISSION
+                | PAST_CERT_SHARED_USER_ID | PAST_CERT_AUTH;
+    }
+
+    /**
+     * Returns a new SigingCertificateLineage which terminates at the node corresponding to the
+     * given certificate.  This is useful in the event of rotating to a new signing algorithm that
+     * is only supported on some platform versions.  It enables a v3 signature to be generated using
+     * this signing certificate and the shortened proof-of-rotation record from this sub lineage in
+     * conjunction with the appropriate SDK version values.
+     *
+     * @param x509Certificate the signing certificate for which to search
+     * @return A new SigningCertificateLineage if the given certificate is present.
+     *
+     * @throws IllegalArgumentException if the provided certificate is not in the lineage.
+     */
+    public SigningCertificateLineage getSubLineage(X509Certificate x509Certificate) {
+        if (x509Certificate == null) {
+            throw new NullPointerException("x509Certificate == null");
+        }
+        for (int i = 0; i < mSigningLineage.size(); i++) {
+            if (mSigningLineage.get(i).signingCert.equals(x509Certificate)) {
+                return new SigningCertificateLineage(
+                        mMinSdkVersion, new ArrayList<>(mSigningLineage.subList(0, i + 1)));
+            }
+        }
+
+        // looks like we didn't find the cert,
+        throw new IllegalArgumentException("Certificate not found in SigningCertificateLineage");
+    }
+
+    /**
+     * Consolidates all of the lineages found in an APK into one lineage, which is the longest one.
+     * In so doing, it also checks that all of the smaller lineages are contained in the largest,
+     * and that they properly cover the desired platform ranges.
+     *
+     * An APK may contain multiple lineag
