@@ -673,4 +673,47 @@ public class SigningCertificateLineage {
      * In so doing, it also checks that all of the smaller lineages are contained in the largest,
      * and that they properly cover the desired platform ranges.
      *
-     * An APK may contain multiple lineag
+     * An APK may contain multiple lineages, one for each signer, which correspond to different
+     * supported platform versions.  In this event, the lineage(s) from the earlier platform
+     * version(s) need to be present in the most recent (longest) one to make sure that when a
+     * platform version changes.
+     *
+     * <note> This does not verify that the largest lineage corresponds to the most recent supported
+     * platform version.  That check requires is performed during v3 verification. </note>
+     */
+    public static SigningCertificateLineage consolidateLineages(
+            List<SigningCertificateLineage> lineages) {
+        if (lineages == null || lineages.isEmpty()) {
+            return null;
+        }
+        int largestIndex = 0;
+        int maxSize = 0;
+
+        // determine the longest chain
+        for (int i = 0; i < lineages.size(); i++) {
+            int curSize = lineages.get(i).size();
+            if (curSize > maxSize) {
+                largestIndex = i;
+                maxSize = curSize;
+            }
+        }
+
+        List<SigningCertificateNode> largestList = lineages.get(largestIndex).mSigningLineage;
+        // make sure all other lineages fit into this one, with the same capabilities
+        for (int i = 0; i < lineages.size(); i++) {
+            if (i == largestIndex) {
+                continue;
+            }
+            List<SigningCertificateNode> underTest = lineages.get(i).mSigningLineage;
+            if (!underTest.equals(largestList.subList(0, underTest.size()))) {
+                throw new IllegalArgumentException("Inconsistent SigningCertificateLineages. "
+                        + "Not all lineages are subsets of each other.");
+            }
+        }
+
+        // if we've made it this far, they all check out, so just return the largest
+        return lineages.get(largestIndex);
+    }
+
+    /**
+     * Repres
