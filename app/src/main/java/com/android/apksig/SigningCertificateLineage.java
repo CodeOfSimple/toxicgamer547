@@ -819,4 +819,42 @@ public class SigningCertificateLineage {
              * platform will not permit the app data from the old signing certificate to
              * propagate to the new version.  Typically, this flag should be set to enable signing
              * certificate rotation, and may be unset later when the app developer is satisfied that
-             * their install base is as migrated as it wi
+             * their install base is as migrated as it will be.
+             */
+            public Builder setInstalledData(boolean enabled) {
+                mCallerConfiguredFlags |= PAST_CERT_INSTALLED_DATA;
+                if (enabled) {
+                    mFlags |= PAST_CERT_INSTALLED_DATA;
+                } else {
+                    mFlags &= ~PAST_CERT_INSTALLED_DATA;
+                }
+                return this;
+            }
+
+            /**
+             * Set the {@code PAST_CERT_SHARED_USER_ID} flag in this capabilities object.  This flag
+             * is used by the platform to determine if this app is willing to be sharedUid with
+             * other apps which are still signed with the associated signing certificate.  This is
+             * useful in situations where sharedUserId apps would like to change their signing
+             * certificate, but can't guarantee the order of updates to those apps.
+             */
+            public Builder setSharedUid(boolean enabled) {
+                mCallerConfiguredFlags |= PAST_CERT_SHARED_USER_ID;
+                if (enabled) {
+                    mFlags |= PAST_CERT_SHARED_USER_ID;
+                } else {
+                    mFlags &= ~PAST_CERT_SHARED_USER_ID;
+                }
+                return this;
+            }
+
+            /**
+             * Set the {@code PAST_CERT_PERMISSION} flag in this capabilities object.  This flag
+             * is used by the platform to determine if this app is willing to grant SIGNATURE
+             * permissions to apps signed with the associated signing certificate.  Without this
+             * capability, an application signed with the older certificate will not be granted the
+             * SIGNATURE permissions defined by this app.  In addition, if multiple apps define the
+             * same SIGNATURE permission, the second one the platform sees will not be installable
+             * if this capability is not set and the signing certificates differ.
+             */
+            public Builder setPerm
