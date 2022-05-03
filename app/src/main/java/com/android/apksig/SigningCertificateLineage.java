@@ -768,4 +768,55 @@ public class SigningCertificateLineage {
         }
 
         /**
-         * Returns {@c
+         * Returns {@code true} if this object has the permission capability.
+         */
+        public boolean hasPermission() {
+            return (mFlags & PAST_CERT_PERMISSION) != 0;
+        }
+
+        /**
+         * Returns {@code true} if this object has the rollback capability.
+         */
+        public boolean hasRollback() {
+            return (mFlags & PAST_CERT_ROLLBACK) != 0;
+        }
+
+        /**
+         * Returns {@code true} if this object has the auth capability.
+         */
+        public boolean hasAuth() {
+            return (mFlags & PAST_CERT_AUTH) != 0;
+        }
+
+        /**
+         * Builder of {@link SignerCapabilities} instances.
+         */
+        public static class Builder {
+            private int mFlags;
+
+            private int mCallerConfiguredFlags;
+
+            /**
+             * Constructs a new {@code Builder}.
+             */
+            public Builder() {
+                mFlags = calculateDefaultFlags();
+            }
+
+            /**
+             * Constructs a new {@code Builder} with the initial capabilities set to the provided
+             * flags.
+             */
+            public Builder(int flags) {
+                mFlags = flags;
+            }
+
+            /**
+             * Set the {@code PAST_CERT_INSTALLED_DATA} flag in this capabilities object.  This flag
+             * is used by the platform to determine if installed data associated with previous
+             * signing certificate should be trusted.  In particular, this capability is required to
+             * perform signing certificate rotation during an upgrade on-device.  Without it, the
+             * platform will not permit the app data from the old signing certificate to
+             * propagate to the new version.  Typically, this flag should be set to enable signing
+             * certificate rotation, and may be unset later when the app developer is satisfied that
+             * their install base is as migrated as it wi
