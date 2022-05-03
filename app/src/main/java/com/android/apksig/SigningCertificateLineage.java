@@ -716,4 +716,56 @@ public class SigningCertificateLineage {
     }
 
     /**
-     * Repres
+     * Representation of the capabilities the APK would like to grant to its old signing
+     * certificates.  The {@code SigningCertificateLineage} provides two conceptual data structures.
+     *   1) proof of rotation - Evidence that other parties can trust an APK's current signing
+     *      certificate if they trust an older one in this lineage
+     *   2) self-trust - certain capabilities may have been granted by an APK to other parties based
+     *      on its own signing certificate.  When it changes its signing certificate it may want to
+     *      allow the other parties to retain those capabilities.
+     * {@code SignerCapabilties} provides a representation of the second structure.
+     *
+     * <p>Use {@link Builder} to obtain configuration instances.
+     */
+    public static class SignerCapabilities {
+        private final int mFlags;
+
+        private final int mCallerConfiguredFlags;
+
+        private SignerCapabilities(int flags) {
+            this(flags, 0);
+        }
+
+        private SignerCapabilities(int flags, int callerConfiguredFlags) {
+            mFlags = flags;
+            mCallerConfiguredFlags = callerConfiguredFlags;
+        }
+
+        private int getFlags() {
+            return mFlags;
+        }
+
+        /**
+         * Returns {@code true} if the capabilities of this object match those of the provided
+         * object.
+         */
+        public boolean equals(SignerCapabilities other) {
+            return this.mFlags == other.mFlags;
+        }
+
+        /**
+         * Returns {@code true} if this object has the installed data capability.
+         */
+        public boolean hasInstalledData() {
+            return (mFlags & PAST_CERT_INSTALLED_DATA) != 0;
+        }
+
+        /**
+         * Returns {@code true} if this object has the shared UID capability.
+         */
+        public boolean hasSharedUid() {
+            return (mFlags & PAST_CERT_SHARED_USER_ID) != 0;
+        }
+
+        /**
+         * Returns {@c
