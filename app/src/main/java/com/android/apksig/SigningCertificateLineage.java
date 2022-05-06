@@ -945,4 +945,63 @@ public class SigningCertificateLineage {
         }
 
         /**
-         * Returns the sign
+         * Returns the signing key of this signer.
+         */
+        public PrivateKey getPrivateKey() {
+            return mPrivateKey;
+        }
+
+        /**
+         * Returns the certificate(s) of this signer. The first certificate's public key corresponds
+         * to this signer's private key.
+         */
+        public X509Certificate getCertificate() {
+            return mCertificate;
+        }
+
+        /**
+         * Builder of {@link SignerConfig} instances.
+         */
+        public static class Builder {
+            private final PrivateKey mPrivateKey;
+            private final X509Certificate mCertificate;
+
+            /**
+             * Constructs a new {@code Builder}.
+             *
+             * @param privateKey signing key
+             * @param certificate the X.509 certificate with a subject public key of the
+             * {@code privateKey}.
+             */
+            public Builder(
+                    PrivateKey privateKey,
+                    X509Certificate certificate) {
+                mPrivateKey = privateKey;
+                mCertificate = certificate;
+            }
+
+            /**
+             * Returns a new {@code SignerConfig} instance configured based on the configuration of
+             * this builder.
+             */
+            public SignerConfig build() {
+                return new SignerConfig(
+                        mPrivateKey,
+                        mCertificate);
+            }
+        }
+    }
+
+    /**
+     * Builder of {@link SigningCertificateLineage} instances.
+     */
+    public static class Builder {
+        private final SignerConfig mOriginalSignerConfig;
+        private final SignerConfig mNewSignerConfig;
+        private SignerCapabilities mOriginalCapabilities;
+        private SignerCapabilities mNewCapabilities;
+        private int mMinSdkVersion;
+        /**
+         * Constructs a new {@code Builder}.
+         *
+         * @param originalSignerConfig first signer in this lineage, pa
