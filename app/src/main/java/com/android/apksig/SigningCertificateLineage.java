@@ -903,4 +903,46 @@ public class SigningCertificateLineage {
             }
 
             /**
-             * Applies the capabilities that were explicitly set in the prov
+             * Applies the capabilities that were explicitly set in the provided capabilities object
+             * to this builder. Any values that were not set will not be applied to this builder
+             * to prevent unintentinoally setting a capability back to a default value.
+             */
+            public Builder setCallerConfiguredCapabilities(SignerCapabilities capabilities) {
+                // The mCallerConfiguredFlags should have a bit set for each capability that was
+                // set by a caller. If a capability was explicitly set then the corresponding bit
+                // in mCallerConfiguredFlags should be set. This allows the provided capabilities
+                // to take effect for those set by the caller while those that were not set will
+                // be cleared by the bitwise and and the initial value for the builder will remain.
+                mFlags = (mFlags & ~capabilities.mCallerConfiguredFlags) |
+                        (capabilities.mFlags & capabilities.mCallerConfiguredFlags);
+                return this;
+            }
+
+            /**
+             * Returns a new {@code SignerConfig} instance configured based on the configuration of
+             * this builder.
+             */
+            public SignerCapabilities build() {
+                return new SignerCapabilities(mFlags, mCallerConfiguredFlags);
+            }
+        }
+    }
+
+    /**
+     * Configuration of a signer.  Used to add a new entry to the {@link SigningCertificateLineage}
+     *
+     * <p>Use {@link Builder} to obtain configuration instances.
+     */
+    public static class SignerConfig {
+        private final PrivateKey mPrivateKey;
+        private final X509Certificate mCertificate;
+
+        private SignerConfig(
+                PrivateKey privateKey,
+                X509Certificate certificate) {
+            mPrivateKey = privateKey;
+            mCertificate = certificate;
+        }
+
+        /**
+         * Returns the sign
