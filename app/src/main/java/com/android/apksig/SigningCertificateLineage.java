@@ -857,4 +857,50 @@ public class SigningCertificateLineage {
              * same SIGNATURE permission, the second one the platform sees will not be installable
              * if this capability is not set and the signing certificates differ.
              */
-            public Builder setPerm
+            public Builder setPermission(boolean enabled) {
+                mCallerConfiguredFlags |= PAST_CERT_PERMISSION;
+                if (enabled) {
+                    mFlags |= PAST_CERT_PERMISSION;
+                } else {
+                    mFlags &= ~PAST_CERT_PERMISSION;
+                }
+                return this;
+            }
+
+            /**
+             * Set the {@code PAST_CERT_ROLLBACK} flag in this capabilities object.  This flag
+             * is used by the platform to determine if this app is willing to upgrade to a new
+             * version that is signed by one of its past signing certificates.
+             *
+             * <note> WARNING: this effectively removes any benefit of signing certificate changes,
+             * since a compromised key could retake control of an app even after change, and should
+             * only be used if there is a problem encountered when trying to ditch an older cert
+             * </note>
+             */
+            public Builder setRollback(boolean enabled) {
+                mCallerConfiguredFlags |= PAST_CERT_ROLLBACK;
+                if (enabled) {
+                    mFlags |= PAST_CERT_ROLLBACK;
+                } else {
+                    mFlags &= ~PAST_CERT_ROLLBACK;
+                }
+                return this;
+            }
+
+            /**
+             * Set the {@code PAST_CERT_AUTH} flag in this capabilities object.  This flag
+             * is used by the platform to determine whether or not privileged access based on
+             * authenticator module signing certificates should be granted.
+             */
+            public Builder setAuth(boolean enabled) {
+                mCallerConfiguredFlags |= PAST_CERT_AUTH;
+                if (enabled) {
+                    mFlags |= PAST_CERT_AUTH;
+                } else {
+                    mFlags &= ~PAST_CERT_AUTH;
+                }
+                return this;
+            }
+
+            /**
+             * Applies the capabilities that were explicitly set in the prov
