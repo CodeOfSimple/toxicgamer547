@@ -1004,4 +1004,43 @@ public class SigningCertificateLineage {
         /**
          * Constructs a new {@code Builder}.
          *
-         * @param originalSignerConfig first signer in this lineage, pa
+         * @param originalSignerConfig first signer in this lineage, parent of the next
+         * @param newSignerConfig new signer in the lineage; the new signing key that the APK will
+         *                        use
+         */
+        public Builder(
+                SignerConfig originalSignerConfig,
+                SignerConfig newSignerConfig) {
+            if (originalSignerConfig == null || newSignerConfig == null) {
+                throw new NullPointerException("Can't pass null SignerConfigs when constructing a "
+                        + "new SigningCertificateLineage");
+            }
+            mOriginalSignerConfig = originalSignerConfig;
+            mNewSignerConfig = newSignerConfig;
+        }
+
+        /**
+         * Sets the minimum Android platform version (API Level) on which this lineage is expected
+         * to validate.  It is possible that newer signers in the lineage may not be recognized on
+         * the given platform, but as long as an older signer is, the lineage can still be used to
+         * sign an APK for the given platform.
+         *
+         * <note> By default, this value is set to the value for the
+         * P release, since this structure was created for that release, and will also be set to
+         * that value if a smaller one is specified. </note>
+         */
+        public Builder setMinSdkVersion(int minSdkVersion) {
+            mMinSdkVersion = minSdkVersion;
+            return this;
+        }
+
+        /**
+         * Sets capabilities to give {@code mOriginalSignerConfig}. These capabilities allow an
+         * older signing certificate to still be used in some situations on the platform even though
+         * the APK is now being signed by a newer signing certificate.
+         */
+        public Builder setOriginalCapabilities(SignerCapabilities signerCapabilities) {
+            if (signerCapabilities == null) {
+                throw new NullPointerException("signerCapabilities == null");
+            }
+            mOriginalC
