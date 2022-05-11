@@ -1043,4 +1043,44 @@ public class SigningCertificateLineage {
             if (signerCapabilities == null) {
                 throw new NullPointerException("signerCapabilities == null");
             }
-            mOriginalC
+            mOriginalCapabilities = signerCapabilities;
+            return this;
+        }
+
+        /**
+         * Sets capabilities to give {@code mNewSignerConfig}. These capabilities allow an
+         * older signing certificate to still be used in some situations on the platform even though
+         * the APK is now being signed by a newer signing certificate.  By default, the new signer
+         * will have all capabilities, so when first switching to a new signing certificate, these
+         * capabilities have no effect, but they will act as the default level of trust when moving
+         * to a new signing certificate.
+         */
+        public Builder setNewCapabilities(SignerCapabilities signerCapabilities) {
+            if (signerCapabilities == null) {
+                throw new NullPointerException("signerCapabilities == null");
+            }
+            mNewCapabilities = signerCapabilities;
+            return this;
+        }
+
+        public SigningCertificateLineage build()
+                throws CertificateEncodingException, InvalidKeyException, NoSuchAlgorithmException,
+                SignatureException {
+            if (mMinSdkVersion < AndroidSdkVersion.P) {
+                mMinSdkVersion = AndroidSdkVersion.P;
+            }
+
+            if (mOriginalCapabilities == null) {
+                mOriginalCapabilities = new SignerCapabilities.Builder().build();
+            }
+
+            if (mNewCapabilities == null) {
+                mNewCapabilities = new SignerCapabilities.Builder().build();
+            }
+
+            return createSigningLineage(
+                    mMinSdkVersion, mOriginalSignerConfig, mOriginalCapabilities,
+                    mNewSignerConfig, mNewCapabilities);
+        }
+    }
+}
