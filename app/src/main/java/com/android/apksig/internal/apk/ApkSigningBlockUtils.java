@@ -150,4 +150,39 @@ public class ApkSigningBlockUtils {
      * {@code [minSdkVersion, maxSdkVersion]} range is that up until now content digest algorithms
      * exhibit the same behavior on all Android platform versions.
      */
-    
+    public static void verifyIntegrity(
+            RunnablesExecutor executor,
+            DataSource beforeApkSigningBlock,
+            DataSource centralDir,
+            ByteBuffer eocd,
+            Set<ContentDigestAlgorithm> contentDigestAlgorithms,
+            Result result) throws IOException, NoSuchAlgorithmException {
+        if (contentDigestAlgorithms.isEmpty()) {
+            // This should never occur because this method is invoked once at least one signature
+            // is verified, meaning at least one content digest is known.
+            throw new RuntimeException("No content digests found");
+        }
+
+        // For the purposes of verifying integrity, ZIP End of Central Directory (EoCD) must be
+        // treated as though its Central Directory offset points to the start of APK Signing Block.
+        // We thus modify the EoCD accordingly.
+        ByteBuffer modifiedEocd = ByteBuffer.allocate(eocd.remaining());
+        int eocdSavedPos = eocd.position();
+        modifiedEocd.order(ByteOrder.LITTLE_ENDIAN);
+        modifiedEocd.put(eocd);
+        modifiedEocd.flip();
+
+        // restore eocd to position prior to modification in case it is to be used elsewhere
+        eocd.position(eocdSavedPos);
+        ZipUtils.setZipEocdCentralDirectoryOffset(modifiedEocd, beforeApkSigningBlock.size());
+        Map<ContentDigestAlgorithm, byte[]> actualContentDigests;
+        try {
+            actualContentDigests =
+                    computeContentDigests(
+                            executor,
+                            contentDigestAlgorithms,
+                            beforeApkSigningBlock,
+                            centralDir,
+                            new ByteBufferDataSource(modifiedEocd));
+            // Special checks for the verity algorithm requirements.
+            if (actualContentDigests.containsKey(ContentDigestAlgorithm.VERITY_CHUNKED_SHA256)) {
