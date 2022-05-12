@@ -104,4 +104,50 @@ public class ApkSigningBlockUtils {
                         return 0;
                     case CHUNKED_SHA512:
                     case VERITY_CHUNKED_SHA256:
-                    
+                        return -1;
+                    default:
+                        throw new IllegalArgumentException("Unknown alg2: " + alg2);
+                }
+            case CHUNKED_SHA512:
+                switch (alg2) {
+                    case CHUNKED_SHA256:
+                    case VERITY_CHUNKED_SHA256:
+                        return 1;
+                    case CHUNKED_SHA512:
+                        return 0;
+                    default:
+                        throw new IllegalArgumentException("Unknown alg2: " + alg2);
+                }
+            case VERITY_CHUNKED_SHA256:
+                switch (alg2) {
+                    case CHUNKED_SHA256:
+                        return 1;
+                    case VERITY_CHUNKED_SHA256:
+                        return 0;
+                    case CHUNKED_SHA512:
+                        return -1;
+                    default:
+                        throw new IllegalArgumentException("Unknown alg2: " + alg2);
+                }
+            default:
+                throw new IllegalArgumentException("Unknown alg1: " + alg1);
+        }
+    }
+
+
+
+    /**
+     * Verifies integrity of the APK outside of the APK Signing Block by computing digests of the
+     * APK and comparing them against the digests listed in APK Signing Block. The expected digests
+     * are taken from {@code SignerInfos} of the provided {@code result}.
+     *
+     * <p>This method adds one or more errors to the {@code result} if a verification error is
+     * expected to be encountered on Android. No errors are added to the {@code result} if the APK's
+     * integrity is expected to verify on Android for each algorithm in
+     * {@code contentDigestAlgorithms}.
+     *
+     * <p>The reason this method is currently not parameterized by a
+     * {@code [minSdkVersion, maxSdkVersion]} range is that up until now content digest algorithms
+     * exhibit the same behavior on all Android platform versions.
+     */
+    
