@@ -62,3 +62,46 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+public class ApkSigningBlockUtils {
+
+    private static final char[] HEX_DIGITS = "01234567890abcdef".toCharArray();
+    private static final long CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES = 1024 * 1024;
+    public static final int ANDROID_COMMON_PAGE_ALIGNMENT_BYTES = 4096;
+    public static final byte[] APK_SIGNING_BLOCK_MAGIC =
+          new byte[] {
+              0x41, 0x50, 0x4b, 0x20, 0x53, 0x69, 0x67, 0x20,
+              0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x20, 0x34, 0x32,
+          };
+    private static final int VERITY_PADDING_BLOCK_ID = 0x42726577;
+
+    public static final int VERSION_JAR_SIGNATURE_SCHEME = 1;
+    public static final int VERSION_APK_SIGNATURE_SCHEME_V2 = 2;
+    public static final int VERSION_APK_SIGNATURE_SCHEME_V3 = 3;
+
+
+    /**
+     * Returns positive number if {@code alg1} is preferred over {@code alg2}, {@code -1} if
+     * {@code alg2} is preferred over {@code alg1}, and {@code 0} if there is no preference.
+     */
+    public static int compareSignatureAlgorithm(SignatureAlgorithm alg1, SignatureAlgorithm alg2) {
+        ContentDigestAlgorithm digestAlg1 = alg1.getContentDigestAlgorithm();
+        ContentDigestAlgorithm digestAlg2 = alg2.getContentDigestAlgorithm();
+        return compareContentDigestAlgorithm(digestAlg1, digestAlg2);
+    }
+
+    /**
+     * Returns a positive number if {@code alg1} is preferred over {@code alg2}, a negative number
+     * if {@code alg2} is preferred over {@code alg1}, or {@code 0} if there is no preference.
+     */
+    private static int compareContentDigestAlgorithm(
+            ContentDigestAlgorithm alg1,
+            ContentDigestAlgorithm alg2) {
+        switch (alg1) {
+            case CHUNKED_SHA256:
+                switch (alg2) {
+                    case CHUNKED_SHA256:
+                        return 0;
+                    case CHUNKED_SHA512:
+                    case VERITY_CHUNKED_SHA256:
+                    
