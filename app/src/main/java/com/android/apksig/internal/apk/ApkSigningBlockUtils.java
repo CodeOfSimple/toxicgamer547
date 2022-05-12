@@ -220,4 +220,41 @@ public class ApkSigningBlockUtils {
                     continue;
                 }
                 ContentDigestAlgorithm contentDigestAlgorithm =
-                        signatureAlgorit
+                        signatureAlgorithm.getContentDigestAlgorithm();
+                // if the current digest algorithm is not in the list provided by the caller then
+                // ignore it; the signer may contain digests not recognized by the specified SDK
+                // range.
+                if (!contentDigestAlgorithms.contains(contentDigestAlgorithm)) {
+                    continue;
+                }
+                byte[] expectedDigest = expected.getValue();
+                byte[] actualDigest = actualContentDigests.get(contentDigestAlgorithm);
+                if (!Arrays.equals(expectedDigest, actualDigest)) {
+                    if (result.signatureSchemeVersion == VERSION_APK_SIGNATURE_SCHEME_V2) {
+                        signerInfo.addError(
+                                ApkVerifier.Issue.V2_SIG_APK_DIGEST_DID_NOT_VERIFY,
+                                contentDigestAlgorithm,
+                                toHex(expectedDigest),
+                                toHex(actualDigest));
+                    } else if (result.signatureSchemeVersion == VERSION_APK_SIGNATURE_SCHEME_V3) {
+                        signerInfo.addError(
+                                ApkVerifier.Issue.V3_SIG_APK_DIGEST_DID_NOT_VERIFY,
+                                contentDigestAlgorithm,
+                                toHex(expectedDigest),
+                                toHex(actualDigest));
+                    }
+                    continue;
+                }
+                signerInfo.verifiedContentDigests.put(contentDigestAlgorithm, actualDigest);
+            }
+        }
+    }
+
+    public static ByteBuffer findApkSignatureSchemeBlock(
+            ByteBuffer apkSigningBlock,
+            int blockId,
+            Result result) throws SignatureNotFoundException {
+        checkByteOrderLittleEndian(apkSigningBlock);
+        // FORMAT:
+        // OFFSET       DATA TYPE  DESCRIPTION
+        // *
