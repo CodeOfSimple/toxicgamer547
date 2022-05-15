@@ -257,4 +257,48 @@ public class ApkSigningBlockUtils {
         checkByteOrderLittleEndian(apkSigningBlock);
         // FORMAT:
         // OFFSET       DATA TYPE  DESCRIPTION
-        // *
+        // * @+0  bytes uint64:    size in bytes (excluding this field)
+        // * @+8  bytes pairs
+        // * @-24 bytes uint64:    size in bytes (same as the one above)
+        // * @-16 bytes uint128:   magic
+        ByteBuffer pairs = sliceFromTo(apkSigningBlock, 8, apkSigningBlock.capacity() - 24);
+
+        int entryCount = 0;
+        while (pairs.hasRemaining()) {
+            entryCount++;
+            if (pairs.remaining() < 8) {
+                throw new SignatureNotFoundException(
+                        "Insufficient data to read size of APK Signing Block entry #" + entryCount);
+            }
+            long lenLong = pairs.getLong();
+            if ((lenLong < 4) || (lenLong > Integer.MAX_VALUE)) {
+                throw new SignatureNotFoundException(
+                        "APK Signing Block entry #" + entryCount
+                                + " size out of range: " + lenLong);
+            }
+            int len = (int) lenLong;
+            int nextEntryPos = pairs.position() + len;
+            if (len > pairs.remaining()) {
+                throw new SignatureNotFoundException(
+                        "APK Signing Block entry #" + entryCount + " size out of range: " + len
+                                + ", available: " + pairs.remaining());
+            }
+            int id = pairs.getInt();
+            if (id == blockId) {
+                return getByteBuffer(pairs, len - 4);
+            }
+            pairs.position(nextEntryPos);
+        }
+
+        throw new SignatureNotFoundException(
+                "No APK Signature Scheme block in APK Signing Block with ID: " + blockId);
+    }
+
+    public static void checkByteOrderLittleEndian(ByteBuffer buffer) {
+        if (buffer.order() != ByteOrder.LITTLE_ENDIAN) {
+            throw new IllegalArgumentException("ByteBuffer byte order must be little endian");
+        }
+    }
+
+    /**
+     * Returns new byte buffer whose content is
