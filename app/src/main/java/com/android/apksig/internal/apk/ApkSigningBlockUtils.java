@@ -301,4 +301,50 @@ public class ApkSigningBlockUtils {
     }
 
     /**
-     * Returns new byte buffer whose content is
+     * Returns new byte buffer whose content is a shared subsequence of this buffer's content
+     * between the specified start (inclusive) and end (exclusive) positions. As opposed to
+     * {@link ByteBuffer#slice()}, the returned buffer's byte order is the same as the source
+     * buffer's byte order.
+     */
+    private static ByteBuffer sliceFromTo(ByteBuffer source, int start, int end) {
+        if (start < 0) {
+            throw new IllegalArgumentException("start: " + start);
+        }
+        if (end < start) {
+            throw new IllegalArgumentException("end < start: " + end + " < " + start);
+        }
+        int capacity = source.capacity();
+        if (end > source.capacity()) {
+            throw new IllegalArgumentException("end > capacity: " + end + " > " + capacity);
+        }
+        int originalLimit = source.limit();
+        int originalPosition = source.position();
+        try {
+            source.position(0);
+            source.limit(end);
+            source.position(start);
+            ByteBuffer result = source.slice();
+            result.order(source.order());
+            return result;
+        } finally {
+            source.position(0);
+            source.limit(originalLimit);
+            source.position(originalPosition);
+        }
+    }
+
+    /**
+     * Relative <em>get</em> method for reading {@code size} number of bytes from the current
+     * position of this buffer.
+     *
+     * <p>This method reads the next {@code size} bytes at this buffer's current position,
+     * returning them as a {@code ByteBuffer} with start set to 0, limit and capacity set to
+     * {@code size}, byte order set to this buffer's byte order; and then increments the position by
+     * {@code size}.
+     */
+    private static ByteBuffer getByteBuffer(ByteBuffer source, int size) {
+        if (size < 0) {
+            throw new IllegalArgumentException("size: " + size);
+        }
+        int originalLimit = source.limit();
+        int position
