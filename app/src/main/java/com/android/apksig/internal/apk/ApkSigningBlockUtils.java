@@ -347,4 +347,53 @@ public class ApkSigningBlockUtils {
             throw new IllegalArgumentException("size: " + size);
         }
         int originalLimit = source.limit();
-        int position
+        int position = source.position();
+        int limit = position + size;
+        if ((limit < position) || (limit > originalLimit)) {
+            throw new BufferUnderflowException();
+        }
+        source.limit(limit);
+        try {
+            ByteBuffer result = source.slice();
+            result.order(source.order());
+            source.position(limit);
+            return result;
+        } finally {
+            source.limit(originalLimit);
+        }
+    }
+
+    public static ByteBuffer getLengthPrefixedSlice(ByteBuffer source) throws ApkFormatException {
+        if (source.remaining() < 4) {
+            throw new ApkFormatException(
+                    "Remaining buffer too short to contain length of length-prefixed field"
+                            + ". Remaining: " + source.remaining());
+        }
+        int len = source.getInt();
+        if (len < 0) {
+            throw new IllegalArgumentException("Negative length");
+        } else if (len > source.remaining()) {
+            throw new ApkFormatException(
+                    "Length-prefixed field longer than remaining buffer"
+                            + ". Field length: " + len + ", remaining: " + source.remaining());
+        }
+        return getByteBuffer(source, len);
+    }
+
+    public static byte[] readLengthPrefixedByteArray(ByteBuffer buf) throws ApkFormatException {
+        int len = buf.getInt();
+        if (len < 0) {
+            throw new ApkFormatException("Negative length");
+        } else if (len > buf.remaining()) {
+            throw new ApkFormatException(
+                    "Underflow while reading length-prefixed value. Length: " + len
+                            + ", available: " + buf.remaining());
+        }
+        byte[] result = new byte[len];
+        buf.get(result);
+        return result;
+    }
+
+    public static String toHex(byte[] value) {
+        StringBuilder sb = new StringBuilder(value.length * 2);
+        int len = valu
