@@ -396,4 +396,43 @@ public class ApkSigningBlockUtils {
 
     public static String toHex(byte[] value) {
         StringBuilder sb = new StringBuilder(value.length * 2);
-        int len = valu
+        int len = value.length;
+        for (int i = 0; i < len; i++) {
+            int hi = (value[i] & 0xff) >>> 4;
+            int lo = value[i] & 0x0f;
+            sb.append(HEX_DIGITS[hi]).append(HEX_DIGITS[lo]);
+        }
+        return sb.toString();
+    }
+
+    public static Map<ContentDigestAlgorithm, byte[]> computeContentDigests(
+            RunnablesExecutor executor,
+            Set<ContentDigestAlgorithm> digestAlgorithms,
+            DataSource beforeCentralDir,
+            DataSource centralDir,
+            DataSource eocd) throws IOException, NoSuchAlgorithmException, DigestException {
+        Map<ContentDigestAlgorithm, byte[]> contentDigests = new HashMap<>();
+        Set<ContentDigestAlgorithm> oneMbChunkBasedAlgorithm = digestAlgorithms.stream()
+                .filter(a -> a == ContentDigestAlgorithm.CHUNKED_SHA256 ||
+                             a == ContentDigestAlgorithm.CHUNKED_SHA512)
+                .collect(Collectors.toSet());
+        computeOneMbChunkContentDigests(
+                executor,
+                oneMbChunkBasedAlgorithm,
+                new DataSource[] { beforeCentralDir, centralDir, eocd },
+                contentDigests);
+
+        if (digestAlgorithms.contains(ContentDigestAlgorithm.VERITY_CHUNKED_SHA256)) {
+            computeApkVerityDigest(beforeCentralDir, centralDir, eocd, contentDigests);
+        }
+        return contentDigests;
+    }
+
+    static void computeOneMbChunkContentDigests(
+            Set<ContentDigestAlgorithm> digestAlgorithms,
+            DataSource[] contents,
+            Map<ContentDigestAlgorithm, byte[]> outputContentDigests)
+            throws IOException, NoSuchAlgorithmException, DigestException {
+        // For each digest algorithm the result is computed as follows:
+        // 1. Each segment of contents is split into consecutive chunks of 1 MB in size.
+        //    The final chunk will be shorter iff the length of
