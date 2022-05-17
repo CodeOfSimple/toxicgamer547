@@ -435,4 +435,35 @@ public class ApkSigningBlockUtils {
             throws IOException, NoSuchAlgorithmException, DigestException {
         // For each digest algorithm the result is computed as follows:
         // 1. Each segment of contents is split into consecutive chunks of 1 MB in size.
-        //    The final chunk will be shorter iff the length of
+        //    The final chunk will be shorter iff the length of segment is not a multiple of 1 MB.
+        //    No chunks are produced for empty (zero length) segments.
+        // 2. The digest of each chunk is computed over the concatenation of byte 0xa5, the chunk's
+        //    length in bytes (uint32 little-endian) and the chunk's contents.
+        // 3. The output digest is computed over the concatenation of the byte 0x5a, the number of
+        //    chunks (uint32 little-endian) and the concatenation of digests of chunks of all
+        //    segments in-order.
+
+        long chunkCountLong = 0;
+        for (DataSource input : contents) {
+            chunkCountLong +=
+                    getChunkCount(input.size(), CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES);
+        }
+        if (chunkCountLong > Integer.MAX_VALUE) {
+            throw new DigestException("Input too long: " + chunkCountLong + " chunks");
+        }
+        int chunkCount = (int) chunkCountLong;
+
+        ContentDigestAlgorithm[] digestAlgorithmsArray =
+                digestAlgorithms.toArray(new ContentDigestAlgorithm[digestAlgorithms.size()]);
+        MessageDigest[] mds = new MessageDigest[digestAlgorithmsArray.length];
+        byte[][] digestsOfChunks = new byte[digestAlgorithmsArray.length][];
+        int[] digestOutputSizes = new int[digestAlgorithmsArray.length];
+        for (int i = 0; i < digestAlgorithmsArray.length; i++) {
+            ContentDigestAlgorithm digestAlgorithm = digestAlgorithmsArray[i];
+            int digestOutputSizeBytes = digestAlgorithm.getChunkDigestOutputSizeBytes();
+            digestOutputSizes[i] = digestOutputSizeBytes;
+            byte[] concatenationOfChunkCountAndChunkDigests =
+                    new byte[5 + chunkCount * digestOutputSizeBytes];
+            concatenationOfChunkCountAndChunkDigests[0] = 0x5a;
+            setUnsignedInt32LittleEndian(
+                    chunkCount, concatenationOfChunk
