@@ -497,4 +497,42 @@ public class ApkSigningBlockUtils {
                     mds[i].update(chunkContentPrefix);
                 }
                 try {
-                    in
+                    input.feed(inputOffset, chunkSize, mdSink);
+                } catch (IOException e) {
+                    throw new IOException("Failed to read chunk #" + chunkIndex, e);
+                }
+                for (int i = 0; i < digestAlgorithmsArray.length; i++) {
+                    MessageDigest md = mds[i];
+                    byte[] concatenationOfChunkCountAndChunkDigests = digestsOfChunks[i];
+                    int expectedDigestSizeBytes = digestOutputSizes[i];
+                    int actualDigestSizeBytes =
+                            md.digest(
+                                    concatenationOfChunkCountAndChunkDigests,
+                                    5 + chunkIndex * expectedDigestSizeBytes,
+                                    expectedDigestSizeBytes);
+                    if (actualDigestSizeBytes != expectedDigestSizeBytes) {
+                        throw new RuntimeException(
+                                "Unexpected output size of " + md.getAlgorithm()
+                                        + " digest: " + actualDigestSizeBytes);
+                    }
+                }
+                inputOffset += chunkSize;
+                inputRemaining -= chunkSize;
+                chunkIndex++;
+            }
+        }
+
+        for (int i = 0; i < digestAlgorithmsArray.length; i++) {
+            ContentDigestAlgorithm digestAlgorithm = digestAlgorithmsArray[i];
+            byte[] concatenationOfChunkCountAndChunkDigests = digestsOfChunks[i];
+            MessageDigest md = mds[i];
+            byte[] digest = md.digest(concatenationOfChunkCountAndChunkDigests);
+            outputContentDigests.put(digestAlgorithm, digest);
+        }
+    }
+
+    static void computeOneMbChunkContentDigests(
+            RunnablesExecutor executor,
+            Set<ContentDigestAlgorithm> digestAlgorithms,
+            DataSource[] contents,
+            Map<C
