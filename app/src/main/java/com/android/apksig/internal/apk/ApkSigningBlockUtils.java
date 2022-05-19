@@ -466,4 +466,35 @@ public class ApkSigningBlockUtils {
                     new byte[5 + chunkCount * digestOutputSizeBytes];
             concatenationOfChunkCountAndChunkDigests[0] = 0x5a;
             setUnsignedInt32LittleEndian(
-                    chunkCount, concatenationOfChunk
+                    chunkCount, concatenationOfChunkCountAndChunkDigests, 1);
+            digestsOfChunks[i] = concatenationOfChunkCountAndChunkDigests;
+            String jcaAlgorithm = digestAlgorithm.getJcaMessageDigestAlgorithm();
+            mds[i] = MessageDigest.getInstance(jcaAlgorithm);
+        }
+
+        DataSink mdSink = DataSinks.asDataSink(mds);
+        byte[] chunkContentPrefix = new byte[5];
+        chunkContentPrefix[0] = (byte) 0xa5;
+        int chunkIndex = 0;
+        // Optimization opportunity: digests of chunks can be computed in parallel. However,
+        // determining the number of computations to be performed in parallel is non-trivial. This
+        // depends on a wide range of factors, such as data source type (e.g., in-memory or fetched
+        // from file), CPU/memory/disk cache bandwidth and latency, interconnect architecture of CPU
+        // cores, load on the system from other threads of execution and other processes, size of
+        // input.
+        // For now, we compute these digests sequentially and thus have the luxury of improving
+        // performance by writing the digest of each chunk into a pre-allocated buffer at exactly
+        // the right position. This avoids unnecessary allocations, copying, and enables the final
+        // digest to be more efficient because it's presented with all of its input in one go.
+        for (DataSource input : contents) {
+            long inputOffset = 0;
+            long inputRemaining = input.size();
+            while (inputRemaining > 0) {
+                int chunkSize =
+                        (int) Math.min(inputRemaining, CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES);
+                setUnsignedInt32LittleEndian(chunkSize, chunkContentPrefix, 1);
+                for (int i = 0; i < mds.length; i++) {
+                    mds[i].update(chunkContentPrefix);
+                }
+                try {
+                    in
