@@ -535,4 +535,44 @@ public class ApkSigningBlockUtils {
             RunnablesExecutor executor,
             Set<ContentDigestAlgorithm> digestAlgorithms,
             DataSource[] contents,
-            Map<C
+            Map<ContentDigestAlgorithm, byte[]> outputContentDigests)
+            throws NoSuchAlgorithmException, DigestException {
+        long chunkCountLong = 0;
+        for (DataSource input : contents) {
+            chunkCountLong +=
+                    getChunkCount(input.size(), CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES);
+        }
+        if (chunkCountLong > Integer.MAX_VALUE) {
+            throw new DigestException("Input too long: " + chunkCountLong + " chunks");
+        }
+        int chunkCount = (int) chunkCountLong;
+
+        List<ChunkDigests> chunkDigestsList = new ArrayList<>(digestAlgorithms.size());
+        for (ContentDigestAlgorithm algorithms : digestAlgorithms) {
+            chunkDigestsList.add(new ChunkDigests(algorithms, chunkCount));
+        }
+
+        ChunkSupplier chunkSupplier = new ChunkSupplier(contents);
+        executor.execute(() -> new ChunkDigester(chunkSupplier, chunkDigestsList));
+
+        // Compute and write out final digest for each algorithm.
+        for (ChunkDigests chunkDigests : chunkDigestsList) {
+            MessageDigest messageDigest = chunkDigests.createMessageDigest();
+            outputContentDigests.put(
+                    chunkDigests.algorithm,
+                    messageDigest.digest(chunkDigests.concatOfDigestsOfChunks));
+        }
+    }
+
+    private static class ChunkDigests {
+        private final ContentDigestAlgorithm algorithm;
+        private final int digestOutputSize;
+        private final byte[] concatOfDigestsOfChunks;
+
+        private ChunkDigests(ContentDigestAlgorithm algorithm, int chunkCount) {
+            this.algorithm = algorithm;
+            digestOutputSize = this.algorithm.getChunkDigestOutputSizeBytes();
+            concatOfDigestsOfChunks = new byte[1 + 4 + chunkCount * digestOutputSize];
+
+            // Fill the initial values of the concatenated digests of chunks, which is
+            // {0x5a, 4-bytes-of-little-endian-chunk-count,
