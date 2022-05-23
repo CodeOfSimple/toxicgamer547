@@ -575,4 +575,52 @@ public class ApkSigningBlockUtils {
             concatOfDigestsOfChunks = new byte[1 + 4 + chunkCount * digestOutputSize];
 
             // Fill the initial values of the concatenated digests of chunks, which is
-            // {0x5a, 4-bytes-of-little-endian-chunk-count,
+            // {0x5a, 4-bytes-of-little-endian-chunk-count, digests*...}.
+            concatOfDigestsOfChunks[0] = 0x5a;
+            setUnsignedInt32LittleEndian(chunkCount, concatOfDigestsOfChunks, 1);
+        }
+
+        private MessageDigest createMessageDigest() throws NoSuchAlgorithmException {
+            return MessageDigest.getInstance(algorithm.getJcaMessageDigestAlgorithm());
+        }
+
+        private int getOffset(int chunkIndex) {
+            return 1 + 4 + chunkIndex * digestOutputSize;
+        }
+    }
+
+    /**
+     * A per-thread digest worker.
+     */
+    private static class ChunkDigester implements Runnable {
+        private final ChunkSupplier dataSupplier;
+        private final List<ChunkDigests> chunkDigests;
+        private final List<MessageDigest> messageDigests;
+        private final DataSink mdSink;
+
+        private ChunkDigester(ChunkSupplier dataSupplier, List<ChunkDigests> chunkDigests) {
+            this.dataSupplier = dataSupplier;
+            this.chunkDigests = chunkDigests;
+            messageDigests = new ArrayList<>(chunkDigests.size());
+            for (ChunkDigests chunkDigest : chunkDigests) {
+                try {
+                    messageDigests.add(chunkDigest.createMessageDigest());
+                } catch (NoSuchAlgorithmException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            mdSink = DataSinks.asDataSink(messageDigests.toArray(new MessageDigest[0]));
+        }
+
+        @Override
+        public void run() {
+            byte[] chunkContentPrefix = new byte[5];
+            chunkContentPrefix[0] = (byte) 0xa5;
+
+            try {
+                for (ChunkSupplier.Chunk chunk = dataSupplier.get();
+                     chunk != null;
+                     chunk = dataSupplier.get()) {
+                    long size = chunk.dataSource.size();
+                    if (size > CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES) {
+                        throw new RuntimeException("Chunk size greate
