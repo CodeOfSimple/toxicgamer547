@@ -623,4 +623,44 @@ public class ApkSigningBlockUtils {
                      chunk = dataSupplier.get()) {
                     long size = chunk.dataSource.size();
                     if (size > CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES) {
-                        throw new RuntimeException("Chunk size greate
+                        throw new RuntimeException("Chunk size greater than expected: " + size);
+                    }
+
+                    // First update with the chunk prefix.
+                    setUnsignedInt32LittleEndian((int)size, chunkContentPrefix, 1);
+                    mdSink.consume(chunkContentPrefix, 0, chunkContentPrefix.length);
+
+                    // Then update with the chunk data.
+                    chunk.dataSource.feed(0, size, mdSink);
+
+                    // Now finalize chunk for all algorithms.
+                    for (int i = 0; i < chunkDigests.size(); i++) {
+                        ChunkDigests chunkDigest = chunkDigests.get(i);
+                        int actualDigestSize = messageDigests.get(i).digest(
+                                chunkDigest.concatOfDigestsOfChunks,
+                                chunkDigest.getOffset(chunk.chunkIndex),
+                                chunkDigest.digestOutputSize);
+                        if (actualDigestSize != chunkDigest.digestOutputSize) {
+                            throw new RuntimeException(
+                                    "Unexpected output size of " + chunkDigest.algorithm
+                                            + " digest: " + actualDigestSize);
+                        }
+                    }
+                }
+            } catch (IOException | DigestException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * Thread-safe 1MB DataSource chunk supplier. When bounds are met in a
+     * supplied {@link DataSource}, the data from the next {@link DataSource}
+     * are NOT concatenated. Only the next call to get() will fetch from the
+     * next {@link DataSource} in the input {@link DataSource} array.
+     */
+    private static class ChunkSupplier implements Supplier<ChunkSupplier.Chunk> {
+        private final DataSource[] dataSources;
+        private final int[] chunkCounts;
+        private final int totalChunkCount;
+       
