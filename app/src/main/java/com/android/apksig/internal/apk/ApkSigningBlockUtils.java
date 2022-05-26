@@ -663,4 +663,49 @@ public class ApkSigningBlockUtils {
         private final DataSource[] dataSources;
         private final int[] chunkCounts;
         private final int totalChunkCount;
-       
+        private final AtomicInteger nextIndex;
+
+        private ChunkSupplier(DataSource[] dataSources) {
+            this.dataSources = dataSources;
+            chunkCounts = new int[dataSources.length];
+            int totalChunkCount = 0;
+            for (int i = 0; i < dataSources.length; i++) {
+                long chunkCount = getChunkCount(dataSources[i].size(),
+                        CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES);
+                if (chunkCount > Integer.MAX_VALUE) {
+                    throw new RuntimeException(
+                            String.format(
+                                    "Number of chunks in dataSource[%d] is greater than max int.",
+                                    i));
+                }
+                chunkCounts[i] = (int)chunkCount;
+                totalChunkCount += chunkCount;
+            }
+            this.totalChunkCount = totalChunkCount;
+            nextIndex = new AtomicInteger(0);
+        }
+
+        /**
+         * We map an integer index to the termination-adjusted dataSources 1MB chunks.
+         * Note that {@link Chunk}s could be less than 1MB, namely the last 1MB-aligned
+         * blocks in each input {@link DataSource} (unless the DataSource itself is
+         * 1MB-aligned).
+         */
+        @Override
+        public ChunkSupplier.Chunk get() {
+            int index = nextIndex.getAndIncrement();
+            if (index < 0 || index >= totalChunkCount) {
+                return null;
+            }
+
+            int dataSourceIndex = 0;
+            int dataSourceChunkOffset = index;
+            for (; dataSourceIndex < dataSources.length; dataSourceIndex++) {
+                if (dataSourceChunkOffset < chunkCounts[dataSourceIndex]) {
+                    break;
+                }
+                dataSourceChunkOffset -= chunkCounts[dataSourceIndex];
+            }
+
+            long remainingSize = Math.min(
+                    dataSources
