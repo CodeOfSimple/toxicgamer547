@@ -708,4 +708,42 @@ public class ApkSigningBlockUtils {
             }
 
             long remainingSize = Math.min(
-                    dataSources
+                    dataSources[dataSourceIndex].size() -
+                            dataSourceChunkOffset * CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES,
+                    CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES);
+            // Note that slicing may involve its own locking. We may wish to reimplement the
+            // underlying mechanism to get rid of that lock (e.g. ByteBufferDataSource should
+            // probably get reimplemented to a delegate model, such that grabbing a slice
+            // doesn't incur a lock).
+            return new Chunk(
+                    dataSources[dataSourceIndex].slice(
+                            dataSourceChunkOffset * CONTENT_DIGESTED_CHUNK_MAX_SIZE_BYTES,
+                            remainingSize),
+                    index);
+        }
+
+        static class Chunk {
+            private final int chunkIndex;
+            private final DataSource dataSource;
+
+            private Chunk(DataSource parentSource, int chunkIndex) {
+                this.chunkIndex = chunkIndex;
+                dataSource = parentSource;
+            }
+        }
+    }
+
+    private static void computeApkVerityDigest(DataSource beforeCentralDir, DataSource centralDir,
+            DataSource eocd, Map<ContentDigestAlgorithm, byte[]> outputContentDigests)
+            throws IOException, NoSuchAlgorithmException {
+        // FORMAT:
+        // OFFSET       DATA TYPE  DESCRIPTION
+        // * @+0  bytes uint8[32]  Merkle tree root hash of SHA-256
+        // * @+32 bytes int64      Length of source data
+        int backBufferSize =
+                ContentDigestAlgorithm.VERITY_CHUNKED_SHA256.getChunkDigestOutputSizeBytes() +
+                Long.SIZE / Byte.SIZE;
+        ByteBuffer encoded = ByteBuffer.allocate(backBufferSize);
+        encoded.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Use 0s as salt for now.  This also needs to be consistent in the fsverify header 
