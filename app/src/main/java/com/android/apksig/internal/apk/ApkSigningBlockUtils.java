@@ -746,4 +746,46 @@ public class ApkSigningBlockUtils {
         ByteBuffer encoded = ByteBuffer.allocate(backBufferSize);
         encoded.order(ByteOrder.LITTLE_ENDIAN);
 
-        // Use 0s as salt for now.  This also needs to be consistent in the fsverify header 
+        // Use 0s as salt for now.  This also needs to be consistent in the fsverify header for
+        // kernel to use.
+        VerityTreeBuilder builder = new VerityTreeBuilder(new byte[8]);
+        byte[] rootHash = builder.generateVerityTreeRootHash(beforeCentralDir, centralDir, eocd);
+        encoded.put(rootHash);
+        encoded.putLong(beforeCentralDir.size() + centralDir.size() + eocd.size());
+
+        outputContentDigests.put(ContentDigestAlgorithm.VERITY_CHUNKED_SHA256, encoded.array());
+    }
+
+    private static long getChunkCount(long inputSize, long chunkSize) {
+        return (inputSize + chunkSize - 1) / chunkSize;
+    }
+
+    private static void setUnsignedInt32LittleEndian(int value, byte[] result, int offset) {
+        result[offset] = (byte) (value & 0xff);
+        result[offset + 1] = (byte) ((value >> 8) & 0xff);
+        result[offset + 2] = (byte) ((value >> 16) & 0xff);
+        result[offset + 3] = (byte) ((value >> 24) & 0xff);
+    }
+
+    public static byte[] encodePublicKey(PublicKey publicKey)
+            throws InvalidKeyException, NoSuchAlgorithmException {
+        byte[] encodedPublicKey = null;
+        if ("X.509".equals(publicKey.getFormat())) {
+            encodedPublicKey = publicKey.getEncoded();
+        }
+        if (encodedPublicKey == null) {
+            try {
+                encodedPublicKey =
+                        KeyFactory.getInstance(publicKey.getAlgorithm())
+                                .getKeySpec(publicKey, X509EncodedKeySpec.class)
+                                .getEncoded();
+            } catch (InvalidKeySpecException e) {
+                throw new InvalidKeyException(
+                        "Failed to obtain X.509 encoded form of public key " + publicKey
+                                + " of class " + publicKey.getClass().getName(),
+                        e);
+            }
+        }
+        if ((encodedPublicKey == null) || (encodedPublicKey.length == 0)) {
+            throw new InvalidKeyException(
+                    "
