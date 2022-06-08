@@ -788,4 +788,51 @@ public class ApkSigningBlockUtils {
         }
         if ((encodedPublicKey == null) || (encodedPublicKey.length == 0)) {
             throw new InvalidKeyException(
-                    "
+                    "Failed to obtain X.509 encoded form of public key " + publicKey
+                            + " of class " + publicKey.getClass().getName());
+        }
+        return encodedPublicKey;
+    }
+
+    public static List<byte[]> encodeCertificates(List<X509Certificate> certificates)
+            throws CertificateEncodingException {
+        List<byte[]> result = new ArrayList<>(certificates.size());
+        for (X509Certificate certificate : certificates) {
+            result.add(certificate.getEncoded());
+        }
+        return result;
+    }
+
+    public static byte[] encodeAsLengthPrefixedElement(byte[] bytes) {
+        byte[][] adapterBytes = new byte[1][];
+        adapterBytes[0] = bytes;
+        return encodeAsSequenceOfLengthPrefixedElements(adapterBytes);
+    }
+
+    public static byte[] encodeAsSequenceOfLengthPrefixedElements(List<byte[]> sequence) {
+        return encodeAsSequenceOfLengthPrefixedElements(
+                sequence.toArray(new byte[sequence.size()][]));
+    }
+
+    public static byte[] encodeAsSequenceOfLengthPrefixedElements(byte[][] sequence) {
+        int payloadSize = 0;
+        for (byte[] element : sequence) {
+            payloadSize += 4 + element.length;
+        }
+        ByteBuffer result = ByteBuffer.allocate(payloadSize);
+        result.order(ByteOrder.LITTLE_ENDIAN);
+        for (byte[] element : sequence) {
+            result.putInt(element.length);
+            result.put(element);
+        }
+        return result.array();
+      }
+
+    public static byte[] encodeAsSequenceOfLengthPrefixedPairsOfIntAndLengthPrefixedBytes(
+            List<Pair<Integer, byte[]>> sequence) {
+          int resultSize = 0;
+          for (Pair<Integer, byte[]> element : sequence) {
+              resultSize += 12 + element.getSecond().length;
+          }
+          ByteBuffer result = ByteBuffer.allocate(resultSize);
+          result.order(ByteOr
