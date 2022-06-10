@@ -835,4 +835,45 @@ public class ApkSigningBlockUtils {
               resultSize += 12 + element.getSecond().length;
           }
           ByteBuffer result = ByteBuffer.allocate(resultSize);
-          result.order(ByteOr
+          result.order(ByteOrder.LITTLE_ENDIAN);
+          for (Pair<Integer, byte[]> element : sequence) {
+              byte[] second = element.getSecond();
+              result.putInt(8 + second.length);
+              result.putInt(element.getFirst());
+              result.putInt(second.length);
+              result.put(second);
+          }
+          return result.array();
+      }
+
+    /**
+     * Returns the APK Signature Scheme block contained in the provided APK file for the given ID
+     * and the additional information relevant for verifying the block against the file.
+     *
+     * @param blockId the ID value in the APK Signing Block's sequence of ID-value pairs
+     *                identifying the appropriate block to find, e.g. the APK Signature Scheme v2
+     *                block ID.
+     *
+     * @throws SignatureNotFoundException if the APK is not signed using given APK Signature Scheme
+     * @throws IOException if an I/O error occurs while reading the APK
+     */
+    public static SignatureInfo findSignature(
+            DataSource apk, ApkUtils.ZipSections zipSections, int blockId, Result result)
+                    throws IOException, SignatureNotFoundException {
+        // Find the APK Signing Block.
+        DataSource apkSigningBlock;
+        long apkSigningBlockOffset;
+        try {
+            ApkUtils.ApkSigningBlock apkSigningBlockInfo =
+                    ApkUtils.findApkSigningBlock(apk, zipSections);
+            apkSigningBlockOffset = apkSigningBlockInfo.getStartOffset();
+            apkSigningBlock = apkSigningBlockInfo.getContents();
+        } catch (ApkSigningBlockNotFoundException e) {
+            throw new SignatureNotFoundException(e.getMessage(), e);
+        }
+        ByteBuffer apkSigningBlockBuf =
+                apkSigningBlock.getByteBuffer(0, (int) apkSigningBlock.size());
+        apkSigningBlockBuf.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Find the APK Signature Scheme Block inside the APK Signing Block.
+        ByteBuff
