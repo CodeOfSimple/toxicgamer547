@@ -876,4 +876,41 @@ public class ApkSigningBlockUtils {
         apkSigningBlockBuf.order(ByteOrder.LITTLE_ENDIAN);
 
         // Find the APK Signature Scheme Block inside the APK Signing Block.
-        ByteBuff
+        ByteBuffer apkSignatureSchemeBlock =
+                findApkSignatureSchemeBlock(apkSigningBlockBuf, blockId, result);
+        return new SignatureInfo(
+                apkSignatureSchemeBlock,
+                apkSigningBlockOffset,
+                zipSections.getZipCentralDirectoryOffset(),
+                zipSections.getZipEndOfCentralDirectoryOffset(),
+                zipSections.getZipEndOfCentralDirectory());
+    }
+
+    /**
+     * Generates a new DataSource representing the APK contents before the Central Directory with
+     * padding, if padding is requested.  If the existing data entries before the Central Directory
+     * are already aligned, or no padding is requested, the original DataSource is used.  This
+     * padding is used to allow for verity-based APK verification.
+     *
+     * @return {@code Pair} containing the potentially new {@code DataSource} and the amount of
+     *         padding used.
+     */
+    public static Pair<DataSource, Integer> generateApkSigningBlockPadding(
+            DataSource beforeCentralDir,
+            boolean apkSigningBlockPaddingSupported) {
+
+        // Ensure APK Signing Block starts from page boundary.
+        int padSizeBeforeSigningBlock = 0;
+        if (apkSigningBlockPaddingSupported &&
+                (beforeCentralDir.size() % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES != 0)) {
+            padSizeBeforeSigningBlock = (int) (
+                    ANDROID_COMMON_PAGE_ALIGNMENT_BYTES -
+                            beforeCentralDir.size() % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES);
+            beforeCentralDir = new ChainedDataSource(
+                    beforeCentralDir,
+                    DataSources.asDataSource(
+                            ByteBuffer.allocate(padSizeBeforeSigningBlock)));
+        }
+        return Pair.of(beforeCentralDir, padSizeBeforeSigningBlock);
+    }
+
