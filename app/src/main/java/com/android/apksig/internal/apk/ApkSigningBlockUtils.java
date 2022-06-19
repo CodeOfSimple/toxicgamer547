@@ -956,4 +956,52 @@ public class ApkSigningBlockUtils {
         if (resultSize % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES != 0) {
             int padding = ANDROID_COMMON_PAGE_ALIGNMENT_BYTES -
                     (resultSize % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES);
-            if (padding < 12) {  // minimum size of an 
+            if (padding < 12) {  // minimum size of an ID-value pair
+                padding += ANDROID_COMMON_PAGE_ALIGNMENT_BYTES;
+            }
+            paddingPair = ByteBuffer.allocate(padding).order(ByteOrder.LITTLE_ENDIAN);
+            paddingPair.putLong(padding - 8);
+            paddingPair.putInt(VERITY_PADDING_BLOCK_ID);
+            paddingPair.rewind();
+            resultSize += padding;
+        }
+
+        ByteBuffer result = ByteBuffer.allocate(resultSize);
+        result.order(ByteOrder.LITTLE_ENDIAN);
+        long blockSizeFieldValue = resultSize - 8L;
+        result.putLong(blockSizeFieldValue);
+
+
+        for (Pair<byte[], Integer> schemeBlockPair : apkSignatureSchemeBlockPairs) {
+            byte[] apkSignatureSchemeBlock = schemeBlockPair.getFirst();
+            int apkSignatureSchemeId = schemeBlockPair.getSecond();
+            long pairSizeFieldValue = 4L + apkSignatureSchemeBlock.length;
+            result.putLong(pairSizeFieldValue);
+            result.putInt(apkSignatureSchemeId);
+            result.put(apkSignatureSchemeBlock);
+        }
+
+        if (paddingPair != null) {
+            result.put(paddingPair);
+        }
+
+        result.putLong(blockSizeFieldValue);
+        result.put(APK_SIGNING_BLOCK_MAGIC);
+
+        return result.array();
+    }
+
+    /**
+     * Computes the digests of the given APK components according to the algorithms specified in the
+     * given SignerConfigs.
+     *
+     * @param signerConfigs signer configurations, one for each signer At least one signer config
+     *        must be provided.
+     *
+     * @throws IOException if an I/O error occurs
+     * @throws NoSuchAlgorithmException if a required cryptographic algorithm implementation is
+     *         missing
+     * @throws SignatureException if an error occurs when computing digests of generating
+     *         signatures
+     */
+    public static Pair<List<SignerConfig>, Map<ContentDigestAlgori
