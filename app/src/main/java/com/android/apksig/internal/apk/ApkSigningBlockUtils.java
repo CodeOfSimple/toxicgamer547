@@ -914,3 +914,46 @@ public class ApkSigningBlockUtils {
         return Pair.of(beforeCentralDir, padSizeBeforeSigningBlock);
     }
 
+    public static DataSource copyWithModifiedCDOffset(
+            DataSource beforeCentralDir, DataSource eocd) throws IOException {
+
+        // Ensure that, when digesting, ZIP End of Central Directory record's Central Directory
+        // offset field is treated as pointing to the offset at which the APK Signing Block will
+        // start.
+        long centralDirOffsetForDigesting = beforeCentralDir.size();
+        ByteBuffer eocdBuf = ByteBuffer.allocate((int) eocd.size());
+        eocdBuf.order(ByteOrder.LITTLE_ENDIAN);
+        eocd.copyTo(0, (int) eocd.size(), eocdBuf);
+        eocdBuf.flip();
+        ZipUtils.setZipEocdCentralDirectoryOffset(eocdBuf, centralDirOffsetForDigesting);
+        return DataSources.asDataSource(eocdBuf);
+    }
+
+    public static byte[] generateApkSigningBlock(
+            List<Pair<byte[], Integer>> apkSignatureSchemeBlockPairs) {
+        // FORMAT:
+        // uint64:  size (excluding this field)
+        // repeated ID-value pairs:
+        //     uint64:           size (excluding this field)
+        //     uint32:           ID
+        //     (size - 4) bytes: value
+        // (extra dummy ID-value for padding to make block size a multiple of 4096 bytes)
+        // uint64:  size (same as the one above)
+        // uint128: magic
+
+        int blocksSize = 0;
+        for (Pair<byte[], Integer> schemeBlockPair : apkSignatureSchemeBlockPairs) {
+            blocksSize += 8 + 4 + schemeBlockPair.getFirst().length; // size + id + value
+        }
+
+        int resultSize =
+                8 // size
+                + blocksSize
+                + 8 // size
+                + 16 // magic
+                ;
+        ByteBuffer paddingPair = null;
+        if (resultSize % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES != 0) {
+            int padding = ANDROID_COMMON_PAGE_ALIGNMENT_BYTES -
+                    (resultSize % ANDROID_COMMON_PAGE_ALIGNMENT_BYTES);
+            if (padding < 12) {  // minimum size of an 
