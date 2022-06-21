@@ -1076,4 +1076,54 @@ public class ApkSigningBlockUtils {
             if (sigMinSdkVersion > maxSdkVersion) {
                 continue;
             }
-            if (sigMinSdkVersion < minProv
+            if (sigMinSdkVersion < minProvidedSignaturesVersion) {
+                minProvidedSignaturesVersion = sigMinSdkVersion;
+            }
+
+            SupportedSignature candidate = bestSigAlgorithmOnSdkVersion.get(sigMinSdkVersion);
+            if ((candidate == null)
+                    || (compareSignatureAlgorithm(
+                            sigAlgorithm, candidate.algorithm) > 0)) {
+                bestSigAlgorithmOnSdkVersion.put(sigMinSdkVersion, sig);
+            }
+        }
+
+        // Must have some supported signature algorithms for minSdkVersion.
+        if (minSdkVersion < minProvidedSignaturesVersion) {
+            throw new NoSupportedSignaturesException(
+                    "Minimum provided signature version " + minProvidedSignaturesVersion +
+                    " < minSdkVersion " + minSdkVersion);
+        }
+        if (bestSigAlgorithmOnSdkVersion.isEmpty()) {
+            throw new NoSupportedSignaturesException("No supported signature");
+        }
+        return bestSigAlgorithmOnSdkVersion.values().stream()
+                .sorted((sig1, sig2) -> Integer.compare(
+                        sig1.algorithm.getId(), sig2.algorithm.getId()))
+                .collect(Collectors.toList());
+    }
+
+    public static class NoSupportedSignaturesException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public NoSupportedSignaturesException(String message) {
+            super(message);
+        }
+    }
+
+    public static class SignatureNotFoundException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public SignatureNotFoundException(String message) {
+            super(message);
+        }
+
+        public SignatureNotFoundException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * uses the SignatureAlgorithms in the provided signerConfig to sign the provided data
+     *
+     * @return list of signature algorithm IDs and their cor
