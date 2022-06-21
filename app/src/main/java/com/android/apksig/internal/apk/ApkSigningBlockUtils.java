@@ -1004,4 +1004,46 @@ public class ApkSigningBlockUtils {
      * @throws SignatureException if an error occurs when computing digests of generating
      *         signatures
      */
-    public static Pair<List<SignerConfig>, Map<ContentDigestAlgori
+    public static Pair<List<SignerConfig>, Map<ContentDigestAlgorithm, byte[]>>
+            computeContentDigests(
+                    RunnablesExecutor executor,
+                    DataSource beforeCentralDir,
+                    DataSource centralDir,
+                    DataSource eocd,
+                    List<SignerConfig> signerConfigs)
+                            throws IOException, NoSuchAlgorithmException, SignatureException {
+        if (signerConfigs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No signer configs provided. At least one is required");
+        }
+
+        // Figure out which digest(s) to use for APK contents.
+        Set<ContentDigestAlgorithm> contentDigestAlgorithms = new HashSet<>(1);
+        for (SignerConfig signerConfig : signerConfigs) {
+            for (SignatureAlgorithm signatureAlgorithm : signerConfig.signatureAlgorithms) {
+                contentDigestAlgorithms.add(signatureAlgorithm.getContentDigestAlgorithm());
+            }
+        }
+
+        // Compute digests of APK contents.
+        Map<ContentDigestAlgorithm, byte[]> contentDigests; // digest algorithm ID -> digest
+        try {
+            contentDigests =
+                    computeContentDigests(
+                            executor,
+                            contentDigestAlgorithms,
+                            beforeCentralDir,
+                            centralDir,
+                            eocd);
+        } catch (IOException e) {
+            throw new IOException("Failed to read APK being signed", e);
+        } catch (DigestException e) {
+            throw new SignatureException("Failed to compute digests of APK", e);
+        }
+
+        // Sign the digests and wrap the signatures and signer info into an APK Signing Block.
+        return Pair.of(signerConfigs, contentDigests);
+    }
+
+    /**
+     * Returns the subset of signatures which are expected to be v
