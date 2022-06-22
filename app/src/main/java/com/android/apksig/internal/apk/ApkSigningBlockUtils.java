@@ -1158,4 +1158,54 @@ public class ApkSigningBlockUtils {
                 Signature signature = Signature.getInstance(jcaSignatureAlgorithm);
                 signature.initVerify(publicKey);
                 if (jcaSignatureAlgorithmParams != null) {
-     
+                    signature.setParameter(jcaSignatureAlgorithmParams);
+                }
+                signature.update(data);
+                if (!signature.verify(signatureBytes)) {
+                    throw new SignatureException("Failed to verify generated "
+                            + jcaSignatureAlgorithm
+                            + " signature using public key from certificate");
+                }
+            } catch (InvalidKeyException e) {
+                throw new InvalidKeyException(
+                        "Failed to verify generated " + jcaSignatureAlgorithm + " signature using"
+                                + " public key from certificate", e);
+            } catch (InvalidAlgorithmParameterException | SignatureException e) {
+                throw new SignatureException(
+                        "Failed to verify generated " + jcaSignatureAlgorithm + " signature using"
+                                + " public key from certificate", e);
+            }
+
+            signatures.add(Pair.of(signatureAlgorithm.getId(), signatureBytes));
+        }
+        return signatures;
+    }
+
+    /**
+     * Signer configuration.
+     */
+    public static class SignerConfig {
+        /** Private key. */
+        public PrivateKey privateKey;
+
+        /**
+         * Certificates, with the first certificate containing the public key corresponding to
+         * {@link #privateKey}.
+         */
+        public List<X509Certificate> certificates;
+
+        /**
+         * List of signature algorithms with which to sign.
+         */
+        public List<SignatureAlgorithm> signatureAlgorithms;
+
+        public int minSdkVersion;
+        public int maxSdkVersion;
+        public SigningCertificateLineage mSigningCertificateLineage;
+    }
+
+    public static class Result {
+        public final int signatureSchemeVersion;
+
+        /** Whether the APK's APK Signature Scheme signature verifies. */
+        public boole
