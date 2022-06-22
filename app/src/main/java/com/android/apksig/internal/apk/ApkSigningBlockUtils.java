@@ -1208,4 +1208,52 @@ public class ApkSigningBlockUtils {
         public final int signatureSchemeVersion;
 
         /** Whether the APK's APK Signature Scheme signature verifies. */
-        public boole
+        public boolean verified;
+
+        public final List<SignerInfo> signers = new ArrayList<>();
+        public SigningCertificateLineage signingCertificateLineage = null;
+        private final List<ApkVerifier.IssueWithParams> mWarnings = new ArrayList<>();
+        private final List<ApkVerifier.IssueWithParams> mErrors = new ArrayList<>();
+
+        public Result(int signatureSchemeVersion) {
+            this.signatureSchemeVersion = signatureSchemeVersion;
+        }
+
+        public boolean containsErrors() {
+            if (!mErrors.isEmpty()) {
+                return true;
+            }
+            if (!signers.isEmpty()) {
+                for (SignerInfo signer : signers) {
+                    if (signer.containsErrors()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public void addError(ApkVerifier.Issue msg, Object... parameters) {
+            mErrors.add(new ApkVerifier.IssueWithParams(msg, parameters));
+        }
+
+        public void addWarning(ApkVerifier.Issue msg, Object... parameters) {
+            mWarnings.add(new ApkVerifier.IssueWithParams(msg, parameters));
+        }
+
+        public List<ApkVerifier.IssueWithParams> getErrors() {
+            return mErrors;
+        }
+
+        public List<ApkVerifier.IssueWithParams> getWarnings() {
+            return mWarnings;
+        }
+
+        public static class SignerInfo {
+            public int index;
+            public List<X509Certificate> certs = new ArrayList<>();
+            public List<ContentDigest> contentDigests = new ArrayList<>();
+            public Map<ContentDigestAlgorithm, byte[]> verifiedContentDigests = new HashMap<>();
+            public List<Signature> signatures = new ArrayList<>();
+            public Map<SignatureAlgorithm, byte[]> verifiedSignatures = new HashMap<>();
+            public List<AdditionalAttribute>
