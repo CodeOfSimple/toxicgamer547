@@ -1256,4 +1256,55 @@ public class ApkSigningBlockUtils {
             public Map<ContentDigestAlgorithm, byte[]> verifiedContentDigests = new HashMap<>();
             public List<Signature> signatures = new ArrayList<>();
             public Map<SignatureAlgorithm, byte[]> verifiedSignatures = new HashMap<>();
-            public List<AdditionalAttribute>
+            public List<AdditionalAttribute> additionalAttributes = new ArrayList<>();
+            public byte[] signedData;
+            public int minSdkVersion;
+            public int maxSdkVersion;
+            public SigningCertificateLineage signingCertificateLineage;
+
+            private final List<ApkVerifier.IssueWithParams> mWarnings = new ArrayList<>();
+            private final List<ApkVerifier.IssueWithParams> mErrors = new ArrayList<>();
+
+            public void addError(ApkVerifier.Issue msg, Object... parameters) {
+                mErrors.add(new ApkVerifier.IssueWithParams(msg, parameters));
+            }
+
+            public void addWarning(ApkVerifier.Issue msg, Object... parameters) {
+                mWarnings.add(new ApkVerifier.IssueWithParams(msg, parameters));
+            }
+
+            public boolean containsErrors() {
+                return !mErrors.isEmpty();
+            }
+
+            public List<ApkVerifier.IssueWithParams> getErrors() {
+                return mErrors;
+            }
+
+            public List<ApkVerifier.IssueWithParams> getWarnings() {
+                return mWarnings;
+            }
+
+            public static class ContentDigest {
+                private final int mSignatureAlgorithmId;
+                private final byte[] mValue;
+
+                public ContentDigest(int signatureAlgorithmId, byte[] value) {
+                    mSignatureAlgorithmId  = signatureAlgorithmId;
+                    mValue = value;
+                }
+
+                public int getSignatureAlgorithmId() {
+                    return mSignatureAlgorithmId;
+                }
+
+                public byte[] getValue() {
+                    return mValue;
+                }
+            }
+
+            public static class Signature {
+                private final int mAlgorithmId;
+                private final byte[] mValue;
+
+                public Signature(int algorithmId, byte[]
