@@ -1307,4 +1307,47 @@ public class ApkSigningBlockUtils {
                 private final int mAlgorithmId;
                 private final byte[] mValue;
 
-                public Signature(int algorithmId, byte[]
+                public Signature(int algorithmId, byte[] value) {
+                    mAlgorithmId  = algorithmId;
+                    mValue = value;
+                }
+
+                public int getAlgorithmId() {
+                    return mAlgorithmId;
+                }
+
+                public byte[] getValue() {
+                    return mValue;
+                }
+            }
+
+            public static class AdditionalAttribute {
+                private final int mId;
+                private final byte[] mValue;
+
+                public AdditionalAttribute(int id, byte[] value) {
+                    mId  = id;
+                    mValue = value.clone();
+                }
+
+                public int getId() {
+                    return mId;
+                }
+
+                public byte[] getValue() {
+                    return mValue.clone();
+                }
+            }
+        }
+    }
+
+    public static class SupportedSignature {
+        public final SignatureAlgorithm algorithm;
+        public final byte[] signature;
+
+        public SupportedSignature(SignatureAlgorithm algorithm, byte[] signature) {
+            this.algorithm = algorithm;
+            this.signature = signature;
+        }
+    }
+}
