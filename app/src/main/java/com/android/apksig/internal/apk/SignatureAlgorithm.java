@@ -70,4 +70,54 @@ public enum SignatureAlgorithm {
             Pair.of("SHA512withRSA", null),
             AndroidSdkVersion.N),
 
-    /** ECDSA with SHA2-256 digest, c
+    /** ECDSA with SHA2-256 digest, content digested using SHA2-256 in 1 MB chunks. */
+    ECDSA_WITH_SHA256(
+            0x0201,
+            ContentDigestAlgorithm.CHUNKED_SHA256,
+            "EC",
+            Pair.of("SHA256withECDSA", null),
+            AndroidSdkVersion.N),
+
+    /** ECDSA with SHA2-512 digest, content digested using SHA2-512 in 1 MB chunks. */
+    ECDSA_WITH_SHA512(
+            0x0202,
+            ContentDigestAlgorithm.CHUNKED_SHA512,
+            "EC",
+            Pair.of("SHA512withECDSA", null),
+            AndroidSdkVersion.N),
+
+    /** DSA with SHA2-256 digest, content digested using SHA2-256 in 1 MB chunks. */
+    DSA_WITH_SHA256(
+            0x0301,
+            ContentDigestAlgorithm.CHUNKED_SHA256,
+            "DSA",
+            Pair.of("SHA256withDSA", null),
+            AndroidSdkVersion.N),
+
+    /**
+     * RSASSA-PKCS1-v1_5 with SHA2-256 digest, content digested using SHA2-256 in 4 KB chunks, in
+     * the same way fsverity operates. This digest and the content length (before digestion, 8 bytes
+     * in little endian) construct the final digest.
+     */
+    VERITY_RSA_PKCS1_V1_5_WITH_SHA256(
+            0x0421,
+            ContentDigestAlgorithm.VERITY_CHUNKED_SHA256,
+            "RSA",
+            Pair.of("SHA256withRSA", null),
+            AndroidSdkVersion.P),
+
+    /**
+     * ECDSA with SHA2-256 digest, content digested using SHA2-256 in 4 KB chunks, in the same way
+     * fsverity operates. This digest and the content length (before digestion, 8 bytes in little
+     * endian) construct the final digest.
+     */
+    VERITY_ECDSA_WITH_SHA256(
+            0x0423,
+            ContentDigestAlgorithm.VERITY_CHUNKED_SHA256,
+            "EC",
+            Pair.of("SHA256withECDSA", null),
+            AndroidSdkVersion.P),
+
+    /**
+     * DSA with SHA2-256 digest, content digested using SHA2-256 in 4 KB chunks, in the same way
+     * fsverity operates. This digest and the content length (before dig
