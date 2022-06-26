@@ -120,4 +120,57 @@ public enum SignatureAlgorithm {
 
     /**
      * DSA with SHA2-256 digest, content digested using SHA2-256 in 4 KB chunks, in the same way
-     * fsverity operates. This digest and the content length (before dig
+     * fsverity operates. This digest and the content length (before digestion, 8 bytes in little
+     * endian) construct the final digest.
+     */
+    VERITY_DSA_WITH_SHA256(
+            0x0425,
+            ContentDigestAlgorithm.VERITY_CHUNKED_SHA256,
+            "DSA",
+            Pair.of("SHA256withDSA", null),
+            AndroidSdkVersion.P);
+
+    private final int mId;
+    private final String mJcaKeyAlgorithm;
+    private final ContentDigestAlgorithm mContentDigestAlgorithm;
+    private final Pair<String, ? extends AlgorithmParameterSpec> mJcaSignatureAlgAndParams;
+    private final int mMinSdkVersion;
+
+    SignatureAlgorithm(int id,
+            ContentDigestAlgorithm contentDigestAlgorithm,
+            String jcaKeyAlgorithm,
+            Pair<String, ? extends AlgorithmParameterSpec> jcaSignatureAlgAndParams,
+            int minSdkVersion) {
+        mId = id;
+        mContentDigestAlgorithm = contentDigestAlgorithm;
+        mJcaKeyAlgorithm = jcaKeyAlgorithm;
+        mJcaSignatureAlgAndParams = jcaSignatureAlgAndParams;
+        mMinSdkVersion = minSdkVersion;
+    }
+
+    /**
+     * Returns the ID of this signature algorithm as used in APK Signature Scheme v2 wire format.
+     */
+    public int getId() {
+        return mId;
+    }
+
+    /**
+     * Returns the content digest algorithm associated with this signature algorithm.
+     */
+    public ContentDigestAlgorithm getContentDigestAlgorithm() {
+        return mContentDigestAlgorithm;
+    }
+
+    /**
+     * Returns the JCA {@link java.security.Key} algorithm used by this signature scheme.
+     */
+    public String getJcaKeyAlgorithm() {
+        return mJcaKeyAlgorithm;
+    }
+
+    /**
+     * Returns the {@link java.security.Signature} algorithm and the {@link AlgorithmParameterSpec}
+     * (or null if not needed) to parameterize the {@code Signature}.
+     */
+    public Pair<String, ? extends AlgorithmParameterSpec> getJcaSignatureAlgorithmAndParams(
