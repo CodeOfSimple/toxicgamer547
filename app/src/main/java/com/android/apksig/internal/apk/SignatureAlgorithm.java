@@ -173,4 +173,21 @@ public enum SignatureAlgorithm {
      * Returns the {@link java.security.Signature} algorithm and the {@link AlgorithmParameterSpec}
      * (or null if not needed) to parameterize the {@code Signature}.
      */
-    public Pair<String, ? extends AlgorithmParameterSpec> getJcaSignatureAlgorithmAndParams(
+    public Pair<String, ? extends AlgorithmParameterSpec> getJcaSignatureAlgorithmAndParams() {
+        return mJcaSignatureAlgAndParams;
+    }
+
+    public int getMinSdkVersion() {
+        return mMinSdkVersion;
+    }
+
+    public static SignatureAlgorithm findById(int id) {
+        for (SignatureAlgorithm alg : SignatureAlgorithm.values()) {
+            if (alg.getId() == id) {
+                return alg;
+            }
+        }
+
+        return null;
+    }
+}
