@@ -55,4 +55,38 @@ import java.util.Map;
 public abstract class V2SchemeSigner {
     /*
      * The two main goals of APK Signature Scheme v2 are:
-     * 1. Detect any unauthorized modifications to the APK. This is achieved by making the sig
+     * 1. Detect any unauthorized modifications to the APK. This is achieved by making the signature
+     *    cover every byte of the APK being signed.
+     * 2. Enable much faster signature and integrity verification. This is achieved by requiring
+     *    only a minimal amount of APK parsing before the signature is verified, thus completely
+     *    bypassing ZIP entry decompression and by making integrity verification parallelizable by
+     *    employing a hash tree.
+     *
+     * The generated signature block is wrapped into an APK Signing Block and inserted into the
+     * original APK immediately before the start of ZIP Central Directory. This is to ensure that
+     * JAR and ZIP parsers continue to work on the signed APK. The APK Signing Block is designed for
+     * extensibility. For example, a future signature scheme could insert its signatures there as
+     * well. The contract of the APK Signing Block is that all contents outside of the block must be
+     * protected by signatures inside the block.
+     */
+
+    private static final int APK_SIGNATURE_SCHEME_V2_BLOCK_ID = 0x7109871a;
+
+    /** Hidden constructor to prevent instantiation. */
+    private V2SchemeSigner() {}
+
+    /**
+     * Gets the APK Signature Scheme v2 signature algorithms to be used for signing an APK using the
+     * provided key.
+     *
+     * @param minSdkVersion minimum API Level of the platform on which the APK may be installed (see
+     *        AndroidManifest.xml minSdkVersion attribute).
+     *
+     * @throws InvalidKeyException if the provided key is not suitable for signing APKs using
+     *         APK Signature Scheme v2
+     */
+    public static List<SignatureAlgorithm> getSuggestedSignatureAlgorithms(
+            PublicKey signingKey, int minSdkVersion, boolean apkSigningBlockPaddingSupported)
+            throws InvalidKeyException {
+        String keyAlgorithm = signingKey.getAlgorithm();
+        if ("RSA".equalsIgnoreCase(keyAlgor
