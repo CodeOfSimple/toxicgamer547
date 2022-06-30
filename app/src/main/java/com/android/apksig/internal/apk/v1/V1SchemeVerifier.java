@@ -704,3 +704,1396 @@ public abstract class V1SchemeVerifier {
                                     + AndroidSdkVersion.KITKAT);
                 }
                 try {
+                    List<Attribute> signedAttributes =
+                            Asn1BerParser.parseImplicitSetOf(
+                                    signerInfo.signedAttrs.getEncoded(), Attribute.class);
+                    SignedAttributes signedAttrs = new SignedAttributes(signedAttributes);
+                    if (maxSdkVersion >= AndroidSdkVersion.N) {
+                        // Content Type attribute is checked only on Android N and newer
+                        String contentType =
+                                signedAttrs.getSingleObjectIdentifierValue(
+                                        Pkcs7Constants.OID_CONTENT_TYPE);
+                        if (contentType == null) {
+                            throw new SignatureException("No Content Type in signed attributes");
+                        }
+                        if (!contentType.equals(signedData.encapContentInfo.contentType)) {
+                            // Did not verify: Content type signed attribute does not match
+                            // SignedData.encapContentInfo.eContentType. This fails verification of
+                            // this SignerInfo but should not prevent verification of other
+                            // SignerInfos. Hence, no exception is thrown.
+                            return null;
+                        }
+                    }
+                    byte[] expectedSignatureFileDigest =
+                            signedAttrs.getSingleOctetStringValue(
+                                    Pkcs7Constants.OID_MESSAGE_DIGEST);
+                    if (expectedSignatureFileDigest == null) {
+                        throw new SignatureException("No content digest in signed attributes");
+                    }
+                    byte[] actualSignatureFileDigest =
+                            MessageDigest.getInstance(
+                                    getJcaDigestAlgorithm(digestAlgorithmOid))
+                                    .digest(signatureFile);
+                    if (!Arrays.equals(
+                            expectedSignatureFileDigest, actualSignatureFileDigest)) {
+                        // Skip verification: signature file digest in signed attributes does not
+                        // match the signature file. This fails verification of
+                        // this SignerInfo but should not prevent verification of other
+                        // SignerInfos. Hence, no exception is thrown.
+                        return null;
+                    }
+                } catch (Asn1DecodingException e) {
+                    throw new SignatureException("Failed to parse signed attributes", e);
+                }
+                // PKCS #7 requires that signature is over signed attributes re-encoded as
+                // ASN.1 DER. However, Android does not re-encode except for changing the
+                // first byte of encoded form from IMPLICIT [0] to UNIVERSAL SET. We do the
+                // same for maximum compatibility.
+                ByteBuffer signedAttrsOriginalEncoding = signerInfo.signedAttrs.getEncoded();
+                s.update((byte) 0x31); // UNIVERSAL SET
+                signedAttrsOriginalEncoding.position(1);
+                s.update(signedAttrsOriginalEncoding);
+            } else {
+                // No signed attributes present -- verify signature against the contents of the
+                // signature file
+                s.update(signatureFile);
+            }
+            byte[] sigBytes = ByteBufferUtils.toByteArray(signerInfo.signature.slice());
+            if (!s.verify(sigBytes)) {
+                // Cryptographic signature did not verify. This fails verification of this
+                // SignerInfo but should not prevent verification of other SignerInfos. Hence, no
+                // exception is thrown.
+                return null;
+            }
+            // Cryptographic signature verified
+            return signingCertificate;
+        }
+
+        private static List<X509Certificate> parseCertificates(
+                List<Asn1OpaqueObject> encodedCertificates) throws CertificateException {
+            if (encodedCertificates.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<X509Certificate> result = new ArrayList<>(encodedCertificates.size());
+            for (int i = 0; i < encodedCertificates.size(); i++) {
+                Asn1OpaqueObject encodedCertificate = encodedCertificates.get(i);
+                X509Certificate certificate;
+                byte[] encodedForm = ByteBufferUtils.toByteArray(encodedCertificate.getEncoded());
+                try {
+                    certificate = X509CertificateUtils.generateCertificate(encodedForm);
+                } catch (CertificateException e) {
+                    throw new CertificateException("Failed to parse certificate #" + (i + 1), e);
+                }
+                // Wrap the cert so that the result's getEncoded returns exactly the original
+                // encoded form. Without this, getEncoded may return a different form from what was
+                // stored in the signature. This is because some X509Certificate(Factory)
+                // implementations re-encode certificates and/or some implementations of
+                // X509Certificate.getEncoded() re-encode certificates.
+                certificate = new GuaranteedEncodedFormX509Certificate(certificate, encodedForm);
+                result.add(certificate);
+            }
+            return result;
+        }
+
+        public static X509Certificate findCertificate(
+                Collection<X509Certificate> certs, SignerIdentifier id) {
+            for (X509Certificate cert : certs) {
+                if (isMatchingCerticicate(cert, id)) {
+                    return cert;
+                }
+            }
+            return null;
+        }
+
+        public static List<X509Certificate> getCertificateChain(
+                List<X509Certificate> certs, X509Certificate leaf) {
+            List<X509Certificate> unusedCerts = new ArrayList<>(certs);
+            List<X509Certificate> result = new ArrayList<>(1);
+            result.add(leaf);
+            unusedCerts.remove(leaf);
+            X509Certificate root = leaf;
+            while (!root.getSubjectDN().equals(root.getIssuerDN())) {
+                Principal targetDn = root.getIssuerDN();
+                boolean issuerFound = false;
+                for (int i = 0; i < unusedCerts.size(); i++) {
+                    X509Certificate unusedCert = unusedCerts.get(i);
+                    if (targetDn.equals(unusedCert.getSubjectDN())) {
+                        issuerFound = true;
+                        unusedCerts.remove(i);
+                        result.add(unusedCert);
+                        root = unusedCert;
+                        break;
+                    }
+                }
+                if (!issuerFound) {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private static boolean isMatchingCerticicate(X509Certificate cert, SignerIdentifier id) {
+            if (id.issuerAndSerialNumber == null) {
+                // Android doesn't support any other means of identifying the signing certificate
+                return false;
+            }
+            IssuerAndSerialNumber issuerAndSerialNumber = id.issuerAndSerialNumber;
+            byte[] encodedIssuer =
+                    ByteBufferUtils.toByteArray(issuerAndSerialNumber.issuer.getEncoded());
+            X500Principal idIssuer = new X500Principal(encodedIssuer);
+            BigInteger idSerialNumber = issuerAndSerialNumber.certificateSerialNumber;
+            return idSerialNumber.equals(cert.getSerialNumber())
+                    && idIssuer.equals(cert.getIssuerX500Principal());
+        }
+
+        private static final String OID_DIGEST_MD5 = "1.2.840.113549.2.5";
+        static final String OID_DIGEST_SHA1 = "1.3.14.3.2.26";
+        private static final String OID_DIGEST_SHA224 = "2.16.840.1.101.3.4.2.4";
+        static final String OID_DIGEST_SHA256 = "2.16.840.1.101.3.4.2.1";
+        private static final String OID_DIGEST_SHA384 = "2.16.840.1.101.3.4.2.2";
+        private static final String OID_DIGEST_SHA512 = "2.16.840.1.101.3.4.2.3";
+
+        static final String OID_SIG_RSA = "1.2.840.113549.1.1.1";
+        private static final String OID_SIG_MD5_WITH_RSA = "1.2.840.113549.1.1.4";
+        private static final String OID_SIG_SHA1_WITH_RSA = "1.2.840.113549.1.1.5";
+        private static final String OID_SIG_SHA224_WITH_RSA = "1.2.840.113549.1.1.14";
+        private static final String OID_SIG_SHA256_WITH_RSA = "1.2.840.113549.1.1.11";
+        private static final String OID_SIG_SHA384_WITH_RSA = "1.2.840.113549.1.1.12";
+        private static final String OID_SIG_SHA512_WITH_RSA = "1.2.840.113549.1.1.13";
+
+        static final String OID_SIG_DSA = "1.2.840.10040.4.1";
+        private static final String OID_SIG_SHA1_WITH_DSA = "1.2.840.10040.4.3";
+        private static final String OID_SIG_SHA224_WITH_DSA = "2.16.840.1.101.3.4.3.1";
+        static final String OID_SIG_SHA256_WITH_DSA = "2.16.840.1.101.3.4.3.2";
+        static final String OID_SIG_SHA384_WITH_DSA = "2.16.840.1.101.3.4.3.3";
+        static final String OID_SIG_SHA512_WITH_DSA = "2.16.840.1.101.3.4.3.4";
+
+        static final String OID_SIG_EC_PUBLIC_KEY = "1.2.840.10045.2.1";
+        private static final String OID_SIG_SHA1_WITH_ECDSA = "1.2.840.10045.4.1";
+        private static final String OID_SIG_SHA224_WITH_ECDSA = "1.2.840.10045.4.3.1";
+        private static final String OID_SIG_SHA256_WITH_ECDSA = "1.2.840.10045.4.3.2";
+        private static final String OID_SIG_SHA384_WITH_ECDSA = "1.2.840.10045.4.3.3";
+        private static final String OID_SIG_SHA512_WITH_ECDSA = "1.2.840.10045.4.3.4";
+
+        private static final Map<String, List<InclusiveIntRange>> SUPPORTED_SIG_ALG_OIDS =
+                new HashMap<>();
+        {
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_RSA,
+                    InclusiveIntRange.from(0));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(0, 8), InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_RSA,
+                    InclusiveIntRange.from(0));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.from(0));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_RSA,
+                    InclusiveIntRange.fromTo(0, 8), InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(0, 8), InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_RSA,
+                    InclusiveIntRange.fromTo(0, 8), InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(0, 8), InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_RSA,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_RSA,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_MD5_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA1_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA224_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA256_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA384_WITH_RSA,
+                    InclusiveIntRange.fromTo(21, 21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA512_WITH_RSA,
+                    InclusiveIntRange.from(21));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_DSA,
+                    InclusiveIntRange.from(0));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.from(9));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_DSA,
+                    InclusiveIntRange.from(22));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_DSA,
+                    InclusiveIntRange.from(22));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.from(21));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA1_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA224_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA256_WITH_DSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_EC_PUBLIC_KEY,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_EC_PUBLIC_KEY,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_EC_PUBLIC_KEY,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_EC_PUBLIC_KEY,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_EC_PUBLIC_KEY,
+                    InclusiveIntRange.from(18));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_MD5, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.from(18));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA1, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA224, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA256, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.from(21));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA384, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA1_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA224_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA256_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA384_WITH_ECDSA,
+                    InclusiveIntRange.fromTo(21, 23));
+            addSupportedSigAlg(
+                    OID_DIGEST_SHA512, OID_SIG_SHA512_WITH_ECDSA,
+                    InclusiveIntRange.from(21));
+        }
+
+        private static void addSupportedSigAlg(
+                String digestAlgorithmOid,
+                String signatureAlgorithmOid,
+                InclusiveIntRange... supportedApiLevels) {
+            SUPPORTED_SIG_ALG_OIDS.put(
+                    digestAlgorithmOid + "with" + signatureAlgorithmOid,
+                    Arrays.asList(supportedApiLevels));
+        }
+
+        private List<InclusiveIntRange> getSigAlgSupportedApiLevels(
+                String digestAlgorithmOid,
+                String signatureAlgorithmOid) {
+            List<InclusiveIntRange> result =
+                    SUPPORTED_SIG_ALG_OIDS.get(digestAlgorithmOid + "with" + signatureAlgorithmOid);
+            return (result != null) ? result : Collections.emptyList();
+        }
+
+        private static class OidToUserFriendlyNameMapper {
+            private OidToUserFriendlyNameMapper() {}
+
+            private static final Map<String, String> OID_TO_USER_FRIENDLY_NAME = new HashMap<>();
+            static {
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_MD5, "MD5");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_SHA1, "SHA-1");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_SHA224, "SHA-224");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_SHA256, "SHA-256");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_SHA384, "SHA-384");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_DIGEST_SHA512, "SHA-512");
+
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_RSA, "RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_MD5_WITH_RSA, "MD5 with RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA1_WITH_RSA, "SHA-1 with RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA224_WITH_RSA, "SHA-224 with RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA256_WITH_RSA, "SHA-256 with RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA384_WITH_RSA, "SHA-384 with RSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA512_WITH_RSA, "SHA-512 with RSA");
+
+
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_DSA, "DSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA1_WITH_DSA, "SHA-1 with DSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA224_WITH_DSA, "SHA-224 with DSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA256_WITH_DSA, "SHA-256 with DSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA384_WITH_DSA, "SHA-384 with DSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA512_WITH_DSA, "SHA-512 with DSA");
+
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_EC_PUBLIC_KEY, "ECDSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA1_WITH_ECDSA, "SHA-1 with ECDSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA224_WITH_ECDSA, "SHA-224 with ECDSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA256_WITH_ECDSA, "SHA-256 with ECDSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA384_WITH_ECDSA, "SHA-384 with ECDSA");
+                OID_TO_USER_FRIENDLY_NAME.put(OID_SIG_SHA512_WITH_ECDSA, "SHA-512 with ECDSA");
+            }
+
+            public static String getUserFriendlyNameForOid(String oid) {
+                return OID_TO_USER_FRIENDLY_NAME.get(oid);
+            }
+        }
+
+        private static final Map<String, String> OID_TO_JCA_DIGEST_ALG = new HashMap<>();
+        static {
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_MD5, "MD5");
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_SHA1, "SHA-1");
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_SHA224, "SHA-224");
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_SHA256, "SHA-256");
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_SHA384, "SHA-384");
+            OID_TO_JCA_DIGEST_ALG.put(OID_DIGEST_SHA512, "SHA-512");
+        }
+
+        private static String getJcaDigestAlgorithm(String oid)
+                throws SignatureException {
+            String result = OID_TO_JCA_DIGEST_ALG.get(oid);
+            if (result == null) {
+                throw new SignatureException("Unsupported digest algorithm: " + oid);
+            }
+            return result;
+        }
+
+        private static final Map<String, String> OID_TO_JCA_SIGNATURE_ALG = new HashMap<>();
+        static {
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_MD5_WITH_RSA, "MD5withRSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA1_WITH_RSA, "SHA1withRSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA224_WITH_RSA, "SHA224withRSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA256_WITH_RSA, "SHA256withRSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA384_WITH_RSA, "SHA384withRSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA512_WITH_RSA, "SHA512withRSA");
+
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA1_WITH_DSA, "SHA1withDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA224_WITH_DSA, "SHA224withDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA256_WITH_DSA, "SHA256withDSA");
+
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA1_WITH_ECDSA, "SHA1withECDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA224_WITH_ECDSA, "SHA224withECDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA256_WITH_ECDSA, "SHA256withECDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA384_WITH_ECDSA, "SHA384withECDSA");
+            OID_TO_JCA_SIGNATURE_ALG.put(OID_SIG_SHA512_WITH_ECDSA, "SHA512withECDSA");
+        }
+
+        private static String getJcaSignatureAlgorithm(
+                String digestAlgorithmOid,
+                String signatureAlgorithmOid) throws SignatureException {
+            // First check whether the signature algorithm OID alone is sufficient
+            String result = OID_TO_JCA_SIGNATURE_ALG.get(signatureAlgorithmOid);
+            if (result != null) {
+                return result;
+            }
+
+            // Signature algorithm OID alone is insufficient. Need to combine digest algorithm OID
+            // with signature algorithm OID.
+            String suffix;
+            if (OID_SIG_RSA.equals(signatureAlgorithmOid)) {
+                suffix = "RSA";
+            } else if (OID_SIG_DSA.equals(signatureAlgorithmOid)) {
+                suffix = "DSA";
+            } else if (OID_SIG_EC_PUBLIC_KEY.equals(signatureAlgorithmOid)) {
+                suffix = "ECDSA";
+            } else {
+                throw new SignatureException(
+                        "Unsupported JCA Signature algorithm"
+                                + " . Digest algorithm: " + digestAlgorithmOid
+                                + ", signature algorithm: " + signatureAlgorithmOid);
+            }
+            String jcaDigestAlg = getJcaDigestAlgorithm(digestAlgorithmOid);
+            // Canonical name for SHA-1 with ... is SHA1with, rather than SHA1. Same for all other
+            // SHA algorithms.
+            if (jcaDigestAlg.startsWith("SHA-")) {
+                jcaDigestAlg = "SHA" + jcaDigestAlg.substring("SHA-".length());
+            }
+            return jcaDigestAlg + "with" + suffix;
+        }
+
+        public void verifySigFileAgainstManifest(
+                byte[] manifestBytes,
+                ManifestParser.Section manifestMainSection,
+                Map<String, ManifestParser.Section> entryNameToManifestSection,
+                Map<Integer, String> supportedApkSigSchemeNames,
+                Set<Integer> foundApkSigSchemeIds,
+                int minSdkVersion,
+                int maxSdkVersion) throws NoSuchAlgorithmException {
+            // Inspect the main section of the .SF file.
+            ManifestParser sf = new ManifestParser(mSigFileBytes);
+            ManifestParser.Section sfMainSection = sf.readSection();
+            if (sfMainSection.getAttributeValue(Attributes.Name.SIGNATURE_VERSION) == null) {
+                mResult.addError(
+                        Issue.JAR_SIG_MISSING_VERSION_ATTR_IN_SIG_FILE,
+                        mSignatureFileEntry.getName());
+                setIgnored();
+                return;
+            }
+
+            if (maxSdkVersion >= AndroidSdkVersion.N) {
+                // Android N and newer rejects APKs whose .SF file says they were supposed to be
+                // signed with APK Signature Scheme v2 (or newer) and yet no such signature was
+                // found.
+                checkForStrippedApkSignatures(
+                        sfMainSection, supportedApkSigSchemeNames, foundApkSigSchemeIds);
+                if (mResult.containsErrors()) {
+                    return;
+                }
+            }
+
+            boolean createdBySigntool = false;
+            String createdBy = sfMainSection.getAttributeValue("Created-By");
+            if (createdBy != null) {
+                createdBySigntool = createdBy.indexOf("signtool") != -1;
+            }
+            boolean manifestDigestVerified =
+                    verifyManifestDigest(
+                            sfMainSection,
+                            createdBySigntool,
+                            manifestBytes,
+                            minSdkVersion,
+                            maxSdkVersion);
+            if (!createdBySigntool) {
+                verifyManifestMainSectionDigest(
+                        sfMainSection,
+                        manifestMainSection,
+                        manifestBytes,
+                        minSdkVersion,
+                        maxSdkVersion);
+            }
+            if (mResult.containsErrors()) {
+                return;
+            }
+
+            // Inspect per-entry sections of .SF file. Technically, if the digest of JAR manifest
+            // verifies, per-entry sections should be ignored. However, most Android platform
+            // implementations require that such sections exist.
+            List<ManifestParser.Section> sfSections = sf.readAllSections();
+            Set<String> sfEntryNames = new HashSet<>(sfSections.size());
+            int sfSectionNumber = 0;
+            for (ManifestParser.Section sfSection : sfSections) {
+                sfSectionNumber++;
+                String entryName = sfSection.getName();
+                if (entryName == null) {
+                    mResult.addError(
+                            Issue.JAR_SIG_UNNNAMED_SIG_FILE_SECTION,
+                            mSignatureFileEntry.getName(),
+                            sfSectionNumber);
+                    setIgnored();
+                    return;
+                }
+                if (!sfEntryNames.add(entryName)) {
+                    mResult.addError(
+                            Issue.JAR_SIG_DUPLICATE_SIG_FILE_SECTION,
+                            mSignatureFileEntry.getName(),
+                            entryName);
+                    setIgnored();
+                    return;
+                }
+                if (manifestDigestVerified) {
+                    // No need to verify this entry's corresponding JAR manifest entry because the
+                    // JAR manifest verifies in full.
+                    continue;
+                }
+                // Whole-file digest of JAR manifest hasn't been verified. Thus, we need to verify
+                // the digest of the JAR manifest section corresponding to this .SF section.
+                ManifestParser.Section manifestSection = entryNameToManifestSection.get(entryName);
+                if (manifestSection == null) {
+                    mResult.addError(
+                            Issue.JAR_SIG_NO_ZIP_ENTRY_DIGEST_IN_SIG_FILE,
+                            entryName,
+                            mSignatureFileEntry.getName());
+                    setIgnored();
+                    continue;
+                }
+                verifyManifestIndividualSectionDigest(
+                        sfSection,
+                        createdBySigntool,
+                        manifestSection,
+                        manifestBytes,
+                        minSdkVersion,
+                        maxSdkVersion);
+            }
+            mSigFileEntryNames = sfEntryNames;
+        }
+
+
+        /**
+         * Returns {@code true} if the whole-file digest of the manifest against the main section of
+         * the .SF file.
+         */
+        private boolean verifyManifestDigest(
+                ManifestParser.Section sfMainSection,
+                boolean createdBySigntool,
+                byte[] manifestBytes,
+                int minSdkVersion,
+                int maxSdkVersion) throws NoSuchAlgorithmException {
+            Collection<NamedDigest> expectedDigests =
+                    getDigestsToVerify(
+                            sfMainSection,
+                            ((createdBySigntool) ? "-Digest" : "-Digest-Manifest"),
+                            minSdkVersion,
+                            maxSdkVersion);
+            boolean digestFound = !expectedDigests.isEmpty();
+            if (!digestFound) {
+                mResult.addWarning(
+                        Issue.JAR_SIG_NO_MANIFEST_DIGEST_IN_SIG_FILE,
+                        mSignatureFileEntry.getName());
+                return false;
+            }
+
+            boolean verified = true;
+            for (NamedDigest expectedDigest : expectedDigests) {
+                String jcaDigestAlgorithm = expectedDigest.jcaDigestAlgorithm;
+                byte[] actual = digest(jcaDigestAlgorithm, manifestBytes);
+                byte[] expected = expectedDigest.digest;
+                if (!Arrays.equals(expected, actual)) {
+                    mResult.addWarning(
+                            Issue.JAR_SIG_ZIP_ENTRY_DIGEST_DID_NOT_VERIFY,
+                            V1SchemeSigner.MANIFEST_ENTRY_NAME,
+                            jcaDigestAlgorithm,
+                            mSignatureFileEntry.getName(),
+                            Base64.encode(actual),
+                            Base64.encode(expected));
+                    verified = false;
+                }
+            }
+            return verified;
+        }
+
+        /**
+         * Verifies the digest of the manifest's main section against the main section of the .SF
+         * file.
+         */
+        private void verifyManifestMainSectionDigest(
+                ManifestParser.Section sfMainSection,
+                ManifestParser.Section manifestMainSection,
+                byte[] manifestBytes,
+                int minSdkVersion,
+                int maxSdkVersion) throws NoSuchAlgorithmException {
+            Collection<NamedDigest> expectedDigests =
+                    getDigestsToVerify(
+                            sfMainSection,
+                            "-Digest-Manifest-Main-Attributes",
+                            minSdkVersion,
+                            maxSdkVersion);
+            if (expectedDigests.isEmpty()) {
+                return;
+            }
+
+            for (NamedDigest expectedDigest : expectedDigests) {
+                String jcaDigestAlgorithm = expectedDigest.jcaDigestAlgorithm;
+                byte[] actual =
+                        digest(
+                                jcaDigestAlgorithm,
+                                manifestBytes,
+                                manifestMainSection.getStartOffset(),
+                                manifestMainSection.getSizeBytes());
+                byte[] expected = expectedDigest.digest;
+                if (!Arrays.equals(expected, actual)) {
+                    mResult.addError(
+                            Issue.JAR_SIG_MANIFEST_MAIN_SECTION_DIGEST_DID_NOT_VERIFY,
+                            jcaDigestAlgorithm,
+                            mSignatureFileEntry.getName(),
+                            Base64.encode(actual),
+                            Base64.encode(expected));
+                }
+            }
+        }
+
+        /**
+         * Verifies the digest of the manifest's individual section against the corresponding
+         * individual section of the .SF file.
+         */
+        private void verifyManifestIndividualSectionDigest(
+                ManifestParser.Section sfIndividualSection,
+                boolean createdBySigntool,
+                ManifestParser.Section manifestIndividualSection,
+                byte[] manifestBytes,
+                int minSdkVersion,
+                int maxSdkVersion) throws NoSuchAlgorithmException {
+            String entryName = sfIndividualSection.getName();
+            Collection<NamedDigest> expectedDigests =
+                    getDigestsToVerify(
+                            sfIndividualSection, "-Digest", minSdkVersion, maxSdkVersion);
+            if (expectedDigests.isEmpty()) {
+                mResult.addError(
+                        Issue.JAR_SIG_NO_ZIP_ENTRY_DIGEST_IN_SIG_FILE,
+                        entryName,
+                        mSignatureFileEntry.getName());
+                return;
+            }
+
+            int sectionStartIndex = manifestIndividualSection.getStartOffset();
+            int sectionSizeBytes = manifestIndividualSection.getSizeBytes();
+            if (createdBySigntool) {
+                int sectionEndIndex = sectionStartIndex + sectionSizeBytes;
+                if ((manifestBytes[sectionEndIndex - 1] == '\n')
+                        && (manifestBytes[sectionEndIndex - 2] == '\n')) {
+                    sectionSizeBytes--;
+                }
+            }
+            for (NamedDigest expectedDigest : expectedDigests) {
+                String jcaDigestAlgorithm = expectedDigest.jcaDigestAlgorithm;
+                byte[] actual =
+                        digest(
+                                jcaDigestAlgorithm,
+                                manifestBytes,
+                                sectionStartIndex,
+                                sectionSizeBytes);
+                byte[] expected = expectedDigest.digest;
+                if (!Arrays.equals(expected, actual)) {
+                    mResult.addError(
+                            Issue.JAR_SIG_MANIFEST_SECTION_DIGEST_DID_NOT_VERIFY,
+                            entryName,
+                            jcaDigestAlgorithm,
+                            mSignatureFileEntry.getName(),
+                            Base64.encode(actual),
+                            Base64.encode(expected));
+                }
+            }
+        }
+
+        private void checkForStrippedApkSignatures(
+                ManifestParser.Section sfMainSection,
+                Map<Integer, String> supportedApkSigSchemeNames,
+                Set<Integer> foundApkSigSchemeIds) {
+            String signedWithApkSchemes =
+                    sfMainSection.getAttributeValue(
+                            V1SchemeSigner.SF_ATTRIBUTE_NAME_ANDROID_APK_SIGNED_NAME_STR);
+            // This field contains a comma-separated list of APK signature scheme IDs which were
+            // used to sign this APK. Android rejects APKs where an ID is known to the platform but
+            // the APK didn't verify using that scheme.
+
+            if (signedWithApkSchemes == null) {
+                // APK signature (e.g., v2 scheme) stripping protections not enabled.
+                if (!foundApkSigSchemeIds.isEmpty()) {
+                    // APK is signed with an APK signature scheme such as v2 scheme.
+                    mResult.addWarning(
+                            Issue.JAR_SIG_NO_APK_SIG_STRIP_PROTECTION,
+                            mSignatureFileEntry.getName());
+                }
+                return;
+            }
+
+            if (supportedApkSigSchemeNames.isEmpty()) {
+                return;
+            }
+
+            Set<Integer> supportedApkSigSchemeIds = supportedApkSigSchemeNames.keySet();
+            Set<Integer> supportedExpectedApkSigSchemeIds = new HashSet<>(1);
+            StringTokenizer tokenizer = new StringTokenizer(signedWithApkSchemes, ",");
+            while (tokenizer.hasMoreTokens()) {
+                String idText = tokenizer.nextToken().trim();
+                if (idText.isEmpty()) {
+                    continue;
+                }
+                int id;
+                try {
+                    id = Integer.parseInt(idText);
+                } catch (Exception ignored) {
+                    continue;
+                }
+                // This APK was supposed to be signed with the APK signature scheme having
+                // this ID.
+                if (supportedApkSigSchemeIds.contains(id)) {
+                    supportedExpectedApkSigSchemeIds.add(id);
+                } else {
+                    mResult.addWarning(
+                            Issue.JAR_SIG_UNKNOWN_APK_SIG_SCHEME_ID,
+                            mSignatureFileEntry.getName(),
+                            id);
+                }
+            }
+
+            for (int id : supportedExpectedApkSigSchemeIds) {
+                if (!foundApkSigSchemeIds.contains(id)) {
+                    String apkSigSchemeName = supportedApkSigSchemeNames.get(id);
+                    mResult.addError(
+                            Issue.JAR_SIG_MISSING_APK_SIG_REFERENCED,
+                            mSignatureFileEntry.getName(),
+                            id,
+                            apkSigSchemeName);
+                }
+            }
+        }
+    }
+
+    public static Collection<NamedDigest> getDigestsToVerify(
+            ManifestParser.Section section,
+            String digestAttrSuffix,
+            int minSdkVersion,
+            int maxSdkVersion) {
+        List<NamedDigest> result = new ArrayList<>(1);
+        if (minSdkVersion < AndroidSdkVersion.JELLY_BEAN_MR2) {
+            // Prior to JB MR2, Android platform's logic for picking a digest algorithm to verify is
+            // to rely on the ancient Digest-Algorithms attribute which contains
+            // whitespace-separated list of digest algorithms (defaulting to SHA-1) to try. The
+            // first digest attribute (with supported digest algorithm) found using the list is
+            // used.
+            String algs = section.getAttributeValue("Digest-Algorithms");
+            if (algs == null) {
+                algs = "SHA SHA1";
+            }
+            StringTokenizer tokens = new StringTokenizer(algs);
+            while (tokens.hasMoreTokens()) {
+                String alg = tokens.nextToken();
+                String attrName = alg + digestAttrSuffix;
+                String digestBase64 = section.getAttributeValue(attrName);
+                if (digestBase64 == null) {
+                    // Attribute not found
+                    continue;
+                }
+                alg = getCanonicalJcaMessageDigestAlgorithm(alg);
+                if ((alg == null)
+                        || (getMinSdkVersionFromWhichSupportedInManifestOrSignatureFile(alg)
+                                > minSdkVersion)) {
+                    // Unsupported digest algorithm
+                    continue;
+                }
+                // Supported digest algorithm
+                result.add(new NamedDigest(alg, Base64.decode(digestBase64)));
+                break;
+            }
+            // No supported digests found -- this will fail to verify on pre-JB MR2 Androids.
+            if (result.isEmpty()) {
+                return result;
+            }
+        }
+
+        if (maxSdkVersion >= AndroidSdkVersion.JELLY_BEAN_MR2) {
+            // On JB MR2 and newer, Android platform picks the strongest algorithm out of:
+            // SHA-512, SHA-384, SHA-256, SHA-1.
+            for (String alg : JB_MR2_AND_NEWER_DIGEST_ALGS) {
+                String attrName = getJarDigestAttributeName(alg, digestAttrSuffix);
+                String digestBase64 = section.getAttributeValue(attrName);
+                if (digestBase64 == null) {
+                    // Attribute not found
+                    continue;
+                }
+                byte[] digest = Base64.decode(digestBase64);
+                byte[] digestInResult = getDigest(result, alg);
+                if ((digestInResult == null) || (!Arrays.equals(digestInResult, digest))) {
+                    result.add(new NamedDigest(alg, digest));
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private static final String[] JB_MR2_AND_NEWER_DIGEST_ALGS = {
+            "SHA-512",
+            "SHA-384",
+            "SHA-256",
+            "SHA-1",
+    };
+
+    private static String getCanonicalJcaMessageDigestAlgorithm(String algorithm) {
+        return UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.get(algorithm.toUpperCase(Locale.US));
+    }
+
+    public static int getMinSdkVersionFromWhichSupportedInManifestOrSignatureFile(
+            String jcaAlgorithmName) {
+        Integer result =
+                MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.get(
+                        jcaAlgorithmName.toUpperCase(Locale.US));
+        return (result != null) ? result : Integer.MAX_VALUE;
+    }
+
+    private static String getJarDigestAttributeName(
+            String jcaDigestAlgorithm, String attrNameSuffix) {
+        if ("SHA-1".equalsIgnoreCase(jcaDigestAlgorithm)) {
+            return "SHA1" + attrNameSuffix;
+        } else {
+            return jcaDigestAlgorithm + attrNameSuffix;
+        }
+    }
+
+    private static final Map<String, String> UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL;
+    static {
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL = new HashMap<>(8);
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("MD5", "MD5");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA", "SHA-1");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA1", "SHA-1");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA-1", "SHA-1");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA-256", "SHA-256");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA-384", "SHA-384");
+        UPPER_CASE_JCA_DIGEST_ALG_TO_CANONICAL.put("SHA-512", "SHA-512");
+    }
+
+    private static final Map<String, Integer>
+            MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST;
+    static {
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST = new HashMap<>(5);
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.put("MD5", 0);
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.put("SHA-1", 0);
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.put("SHA-256", 0);
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.put(
+                "SHA-384", AndroidSdkVersion.GINGERBREAD);
+        MIN_SDK_VESION_FROM_WHICH_DIGEST_SUPPORTED_IN_MANIFEST.put(
+                "SHA-512", AndroidSdkVersion.GINGERBREAD);
+    }
+
+    private static byte[] getDigest(Collection<NamedDigest> digests, String jcaDigestAlgorithm) {
+        for (NamedDigest digest : digests) {
+            if (digest.jcaDigestAlgorithm.equalsIgnoreCase(jcaDigestAlgorithm)) {
+                return digest.digest;
+            }
+        }
+        return null;
+    }
+
+    public static List<CentralDirectoryRecord> parseZipCentralDirectory(
+            DataSource apk,
+            ApkUtils.ZipSections apkSections)
+                    throws IOException, ApkFormatException {
+        // Read the ZIP Central Directory
+        long cdSizeBytes = apkSections.getZipCentralDirectorySizeBytes();
+        if (cdSizeBytes > Integer.MAX_VALUE) {
+            throw new ApkFormatException("ZIP Central Directory too large: " + cdSizeBytes);
+        }
+        long cdOffset = apkSections.getZipCentralDirectoryOffset();
+        ByteBuffer cd = apk.getByteBuffer(cdOffset, (int) cdSizeBytes);
+        cd.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Parse the ZIP Central Directory
+        int expectedCdRecordCount = apkSections.getZipCentralDirectoryRecordCount();
+        List<CentralDirectoryRecord> cdRecords = new ArrayList<>(expectedCdRecordCount);
+        for (int i = 0; i < expectedCdRecordCount; i++) {
+            CentralDirectoryRecord cdRecord;
+            int offsetInsideCd = cd.position();
+            try {
+                cdRecord = CentralDirectoryRecord.getRecord(cd);
+            } catch (ZipFormatException e) {
+                throw new ApkFormatException(
+                        "Malformed ZIP Central Directory record #" + (i + 1)
+                                + " at file offset " + (cdOffset + offsetInsideCd),
+                        e);
+            }
+            String entryName = cdRecord.getName();
+            if (entryName.endsWith("/")) {
+                // Ignore directory entries
+                continue;
+            }
+            cdRecords.add(cdRecord);
+        }
+        // There may be more data in Central Directory, but we don't warn or throw because Android
+        // ignores unused CD data.
+
+        return cdRecords;
+    }
+
+    /**
+     * Returns {@code true} if the provided JAR entry must be mentioned in signed JAR archive's
+     * manifest for the APK to verify on Android.
+     */
+    private static boolean isJarEntryDigestNeededInManifest(String entryName) {
+        // NOTE: This logic is different from what's required by the JAR signing scheme. This is
+        // because Android's APK verification logic differs from that spec. In particular, JAR
+        // signing spec includes into JAR manifest all files in subdirectories of META-INF and
+        // any files inside META-INF not related to signatures.
+        if (entryName.startsWith("META-INF/")) {
+            return false;
+        }
+        return !entryName.endsWith("/");
+    }
+
+    private static Set<Signer> verifyJarEntriesAgainstManifestAndSigners(
+            DataSource apk,
+            long cdOffsetInApk,
+            Collection<CentralDirectoryRecord> cdRecords,
+            Map<String, ManifestParser.Section> entryNameToManifestSection,
+            List<Signer> signers,
+            int minSdkVersion,
+            int maxSdkVersion,
+            Result result) throws ApkFormatException, IOException, NoSuchAlgorithmException {
+        // Iterate over APK contents as sequentially as possible to improve performance.
+        List<CentralDirectoryRecord> cdRecordsSortedByLocalFileHeaderOffset =
+                new ArrayList<>(cdRecords);
+        Collections.sort(
+                cdRecordsSortedByLocalFileHeaderOffset,
+                CentralDirectoryRecord.BY_LOCAL_FILE_HEADER_OFFSET_COMPARATOR);
+        Set<String> manifestEntryNamesMissingFromApk =
+                new HashSet<>(entryNameToManifestSection.keySet());
+        List<Signer> firstSignedEntrySigners = null;
+        String firstSignedEntryName = null;
+        for (CentralDirectoryRecord cdRecord : cdRecordsSortedByLocalFileHeaderOffset) {
+            String entryName = cdRecord.getName();
+            manifestEntryNamesMissingFromApk.remove(entryName);
+            if (!isJarEntryDigestNeededInManifest(entryName)) {
+                continue;
+            }
+
+            ManifestParser.Section manifestSection = entryNameToManifestSection.get(entryName);
+            if (manifestSection == null) {
+                result.addError(Issue.JAR_SIG_NO_ZIP_ENTRY_DIGEST_IN_MANIFEST, entryName);
+                continue;
+            }
+
+            List<Signer> entrySigners = new ArrayList<>(signers.size());
+            for (Signer signer : signers) {
+                if (signer.getSigFileEntryNames().contains(entryName)) {
+                    entrySigners.add(signer);
+                }
+            }
+            if (entrySigners.isEmpty()) {
+                result.addError(Issue.JAR_SIG_ZIP_ENTRY_NOT_SIGNED, entryName);
+                continue;
+            }
+            if (firstSignedEntrySigners == null) {
+                firstSignedEntrySigners = entrySigners;
+                firstSignedEntryName = entryName;
+            } else if (!entrySigners.equals(firstSignedEntrySigners)) {
+                result.addError(
+                        Issue.JAR_SIG_ZIP_ENTRY_SIGNERS_MISMATCH,
+                        firstSignedEntryName,
+                        getSignerNames(firstSignedEntrySigners),
+                        entryName,
+                        getSignerNames(entrySigners));
+                continue;
+            }
+
+            List<NamedDigest> expectedDigests =
+                    new ArrayList<>(
+                            getDigestsToVerify(
+                                    manifestSection, "-Digest", minSdkVersion, maxSdkVersion));
+            if (expectedDigests.isEmpty()) {
+                result.addError(Issue.JAR_SIG_NO_ZIP_ENTRY_DIGEST_IN_MANIFEST, entryName);
+                continue;
+            }
+
+            MessageDigest[] mds = new MessageDigest[expectedDigests.size()];
+            for (int i = 0; i < expectedDigests.size(); i++) {
+                mds[i] = getMessageDigest(expectedDigests.get(i).jcaDigestAlgorithm);
+            }
+
+            try {
+                LocalFileRecord.outputUncompressedData(
+                        apk,
+                        cdRecord,
+                        cdOffsetInApk,
+                        DataSinks.asDataSink(mds));
+            } catch (ZipFormatException e) {
+                throw new ApkFormatException("Malformed ZIP entry: " + entryName, e);
+            } catch (IOException e) {
+                throw new IOException("Failed to read entry: " + entryName, e);
+            }
+
+            for (int i = 0; i < expectedDigests.size(); i++) {
+                NamedDigest expectedDigest = expectedDigests.get(i);
+                byte[] actualDigest = mds[i].digest();
+                if (!Arrays.equals(expectedDigest.digest, actualDigest)) {
+                    result.addError(
+                            Issue.JAR_SIG_ZIP_ENTRY_DIGEST_DID_NOT_VERIFY,
+                            entryName,
+                            expectedDigest.jcaDigestAlgorithm,
+                            V1SchemeSigner.MANIFEST_ENTRY_NAME,
+                            Base64.encode(actualDigest),
+                            Base64.encode(expectedDigest.digest));
+                }
+            }
+        }
+
+        if (firstSignedEntrySigners == null) {
+            result.addError(Issue.JAR_SIG_NO_SIGNED_ZIP_ENTRIES);
+            return Collections.emptySet();
+        } else {
+            return new HashSet<>(firstSignedEntrySigners);
+        }
+    }
+
+    private static List<String> getSignerNames(List<Signer> signers) {
+        if (signers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> result = new ArrayList<>(signers.size());
+        for (Signer signer : signers) {
+            result.add(signer.getName());
+        }
+        return result;
+    }
+
+    private static MessageDigest getMessageDigest(String algorithm)
+            throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance(algorithm);
+    }
+
+    private static byte[] digest(String algorithm, byte[] data, int offset, int length)
+            throws NoSuchAlgorithmException {
+        MessageDigest md = getMessageDigest(algorithm);
+        md.update(data, offset, length);
+        return md.digest();
+    }
+
+    private static byte[] digest(String algorithm, byte[] data) throws NoSuchAlgorithmException {
+        return getMessageDigest(algorithm).digest(data);
+    }
+
+    public static class NamedDigest {
+        public final String jcaDigestAlgorithm;
+        public final byte[] digest;
+
+        private NamedDigest(String jcaDigestAlgorithm, byte[] digest) {
+            this.jcaDigestAlgorithm = jcaDigestAlgorithm;
+            this.digest = digest;
+        }
+    }
+
+    public static class Result {
+
+        /** Whether the APK's JAR signature verifies. */
+        public boolean verified;
+
+        /** List of APK's signers. These signers are used by Android. */
+        public final List<SignerInfo> signers = new ArrayList<>();
+
+        /**
+         * Signers encountered in the APK but not included in the set of the APK's signers. These
+         * signers are ignored by Android.
+         */
+        public final List<SignerInfo> ignoredSigners = new ArrayList<>();
+
+        private final List<IssueWithParams> mWarnings = new ArrayList<>();
+        private final List<IssueWithParams> mErrors = new ArrayList<>();
+
+        private boolean containsErrors() {
+            if (!mErrors.isEmpty()) {
+                return true;
+            }
+            for (SignerInfo signer : signers) {
+                if (signer.containsErrors()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void addError(Issue msg, Object... parameters) {
+            mErrors.add(new IssueWithParams(msg, parameters));
+        }
+
+        private void addWarning(Issue msg, Object... parameters) {
+            mWarnings.add(new IssueWithParams(msg, parameters));
+        }
+
+        public List<IssueWithParams> getErrors() {
+            return mErrors;
+        }
+
+        public List<IssueWithParams> getWarnings() {
+            return mWarnings;
+        }
+
+        public static class SignerInfo {
+            public final String name;
+            public final String signatureFileName;
+            public final String signatureBlockFileName;
+            public final List<X509Certificate> certChain = new ArrayList<>();
+
+            private final List<IssueWithParams> mWarnings = new ArrayList<>();
+            private final List<IssueWithParams> mErrors = new ArrayList<>();
+
+            private SignerInfo(
+                    String name, String signatureBlockFileName, String signatureFileName) {
+                this.name = name;
+                this.signatureBlockFileName = signatureBlockFileName;
+                this.signatureFileName = signatureFileName;
+            }
+
+            private boolean containsErrors() {
+                return !mErrors.isEmpty();
+            }
+
+            private void addError(Issue msg, Object... parameters) {
+                mErrors.add(new IssueWithParams(msg, parameters));
+            }
+
+            private void addWarning(Issue msg, Object... parameters) {
+                mWarnings.add(new IssueWithParams(msg, parameters));
+            }
+
+            public List<IssueWithParams> getErrors() {
+                return mErrors;
+            }
+
+            public List<IssueWithParams> getWarnings() {
+                return mWarnings;
+            }
+        }
+    }
+
+    private static class SignedAttributes {
+        private Map<String, List<Asn1OpaqueObject>> mAttrs;
+
+        public SignedAttributes(Collection<Attribute> attrs) throws Pkcs7DecodingException {
+            Map<String, List<Asn1OpaqueObject>> result = new HashMap<>(attrs.size());
+            for (Attribute attr : attrs) {
+                if (result.put(attr.attrType, attr.attrValues) != null) {
+                    throw new Pkcs7DecodingException("Duplicate signed attribute: " + attr.attrType);
+                }
+            }
+            mAttrs = result;
+        }
+
+        private Asn1OpaqueObject getSingleValue(String attrOid) throws Pkcs7DecodingException {
+            List<Asn1OpaqueObject> values = mAttrs.get(attrOid);
+            if ((values == null) || (values.isEmpty())) {
+                return null;
+            }
+            if (values.size() > 1) {
+                throw new Pkcs7DecodingException("Attribute " + attrOid + " has multiple values");
+            }
+            return values.get(0);
+        }
+
+        public String getSingleObjectIdentifierValue(String attrOid) throws Pkcs7DecodingException {
+            Asn1OpaqueObject value = getSingleValue(attrOid);
+            if (value == null) {
+                return null;
+            }
+            try {
+                return Asn1BerParser.parse(value.getEncoded(), ObjectIdentifierChoice.class).value;
+            } catch (Asn1DecodingException e) {
+                throw new Pkcs7DecodingException("Failed to decode OBJECT IDENTIFIER", e);
+            }
+        }
+
+        public byte[] getSingleOctetStringValue(String attrOid) throws Pkcs7DecodingException {
+            Asn1OpaqueObject value = getSingleValue(attrOid);
+            if (value == null) {
+                return null;
+            }
+            try {
+                return Asn1BerParser.parse(value.getEncoded(), OctetStringChoice.class).value;
+            } catch (Asn1DecodingException e) {
+                throw new Pkcs7DecodingException("Failed to decode OBJECT IDENTIFIER", e);
+            }
+        }
+    }
+
+    @Asn1Class(type = Asn1Type.CHOICE)
+    public static class OctetStringChoice {
+        @Asn1Field(type = Asn1Type.OCTET_STRING)
+        public byte[] value;
+    }
+
+    @Asn1Class(type = Asn1Type.CHOICE)
+    public static class ObjectIdentifierChoice {
+        @Asn1Field(type = Asn1Type.OBJECT_IDENTIFIER)
+        public String value;
+    }
+}
