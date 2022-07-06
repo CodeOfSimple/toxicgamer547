@@ -89,4 +89,36 @@ public abstract class V2SchemeSigner {
             PublicKey signingKey, int minSdkVersion, boolean apkSigningBlockPaddingSupported)
             throws InvalidKeyException {
         String keyAlgorithm = signingKey.getAlgorithm();
-        if ("RSA".equalsIgnoreCase(keyAlgor
+        if ("RSA".equalsIgnoreCase(keyAlgorithm)) {
+            // Use RSASSA-PKCS1-v1_5 signature scheme instead of RSASSA-PSS to guarantee
+            // deterministic signatures which make life easier for OTA updates (fewer files
+            // changed when deterministic signature schemes are used).
+
+            // Pick a digest which is no weaker than the key.
+            int modulusLengthBits = ((RSAKey) signingKey).getModulus().bitLength();
+            if (modulusLengthBits <= 3072) {
+                // 3072-bit RSA is roughly 128-bit strong, meaning SHA-256 is a good fit.
+                List<SignatureAlgorithm> algorithms = new ArrayList<>();
+                algorithms.add(SignatureAlgorithm.RSA_PKCS1_V1_5_WITH_SHA256);
+                if (apkSigningBlockPaddingSupported) {
+                    algorithms.add(SignatureAlgorithm.VERITY_RSA_PKCS1_V1_5_WITH_SHA256);
+                }
+                return algorithms;
+            } else {
+                // Keys longer than 3072 bit need to be paired with a stronger digest to avoid the
+                // digest being the weak link. SHA-512 is the next strongest supported digest.
+                return Collections.singletonList(SignatureAlgorithm.RSA_PKCS1_V1_5_WITH_SHA512);
+            }
+        } else if ("DSA".equalsIgnoreCase(keyAlgorithm)) {
+            // DSA is supported only with SHA-256.
+            List<SignatureAlgorithm> algorithms = new ArrayList<>();
+            algorithms.add(SignatureAlgorithm.DSA_WITH_SHA256);
+            if (apkSigningBlockPaddingSupported) {
+                algorithms.add(SignatureAlgorithm.VERITY_DSA_WITH_SHA256);
+            }
+            return algorithms;
+        } else if ("EC".equalsIgnoreCase(keyAlgorithm)) {
+            // Pick a digest which is no weaker than the key.
+            int keySizeBits = ((ECKey) signingKey).getParams().getOrder().bitLength();
+            if (keySizeBits <= 256) {
+                // 256-
