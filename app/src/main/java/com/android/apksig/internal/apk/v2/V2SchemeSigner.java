@@ -121,4 +121,42 @@ public abstract class V2SchemeSigner {
             // Pick a digest which is no weaker than the key.
             int keySizeBits = ((ECKey) signingKey).getParams().getOrder().bitLength();
             if (keySizeBits <= 256) {
-                // 256-
+                // 256-bit Elliptic Curve is roughly 128-bit strong, meaning SHA-256 is a good fit.
+                List<SignatureAlgorithm> algorithms = new ArrayList<>();
+                algorithms.add(SignatureAlgorithm.ECDSA_WITH_SHA256);
+                if (apkSigningBlockPaddingSupported) {
+                    algorithms.add(SignatureAlgorithm.VERITY_ECDSA_WITH_SHA256);
+                }
+                return algorithms;
+            } else {
+                // Keys longer than 256 bit need to be paired with a stronger digest to avoid the
+                // digest being the weak link. SHA-512 is the next strongest supported digest.
+                return Collections.singletonList(SignatureAlgorithm.ECDSA_WITH_SHA512);
+            }
+        } else {
+            throw new InvalidKeyException("Unsupported key algorithm: " + keyAlgorithm);
+        }
+    }
+
+    public static Pair<byte[], Integer> generateApkSignatureSchemeV2Block(
+            RunnablesExecutor executor,
+            DataSource beforeCentralDir,
+            DataSource centralDir,
+            DataSource eocd,
+            List<SignerConfig> signerConfigs,
+            boolean v3SigningEnabled)
+                    throws IOException, InvalidKeyException, NoSuchAlgorithmException,
+                            SignatureException {
+        Pair<List<SignerConfig>,
+                Map<ContentDigestAlgorithm, byte[]>> digestInfo =
+                ApkSigningBlockUtils.computeContentDigests(
+                        executor, beforeCentralDir, centralDir, eocd, signerConfigs);
+        return generateApkSignatureSchemeV2Block(
+                digestInfo.getFirst(), digestInfo.getSecond(),v3SigningEnabled);
+    }
+
+    private static Pair<byte[], Integer> generateApkSignatureSchemeV2Block(
+            List<SignerConfig> signerConfigs,
+            Map<ContentDigestAlgorithm, byte[]> contentDigests,
+            boolean v3SigningEnabled)
+                    throws NoSuchAlgorithmException, InvalidKeyException,
