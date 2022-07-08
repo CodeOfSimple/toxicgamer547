@@ -203,4 +203,40 @@ public abstract class V2SchemeSigner {
             throw new SignatureException("Failed to encode certificates", e);
         }
 
-        List<Pair<Integer,
+        List<Pair<Integer, byte[]>> digests =
+                new ArrayList<>(signerConfig.signatureAlgorithms.size());
+        for (SignatureAlgorithm signatureAlgorithm : signerConfig.signatureAlgorithms) {
+            ContentDigestAlgorithm contentDigestAlgorithm =
+                    signatureAlgorithm.getContentDigestAlgorithm();
+            byte[] contentDigest = contentDigests.get(contentDigestAlgorithm);
+            if (contentDigest == null) {
+                throw new RuntimeException(
+                        contentDigestAlgorithm + " content digest for " + signatureAlgorithm
+                                + " not computed");
+            }
+            digests.add(Pair.of(signatureAlgorithm.getId(), contentDigest));
+        }
+        signedData.digests = digests;
+        signedData.additionalAttributes = generateAdditionalAttributes(v3SigningEnabled);
+
+        V2SignatureSchemeBlock.Signer signer = new V2SignatureSchemeBlock.Signer();
+        // FORMAT:
+        // * length-prefixed sequence of length-prefixed digests:
+        //   * uint32: signature algorithm ID
+        //   * length-prefixed bytes: digest of contents
+        // * length-prefixed sequence of certificates:
+        //   * length-prefixed bytes: X.509 certificate (ASN.1 DER encoded).
+        // * length-prefixed sequence of length-prefixed additional attributes:
+        //   * uint32: ID
+        //   * (length - 4) bytes: value
+
+        signer.signedData = encodeAsSequenceOfLengthPrefixedElements(new byte[][] {
+            encodeAsSequenceOfLengthPrefixedPairsOfIntAndLengthPrefixedBytes(signedData.digests),
+            encodeAsSequenceOfLengthPrefixedElements(signedData.certificates),
+            signedData.additionalAttributes,
+            new byte[0],
+        });
+        signer.publicKey = encodedPublicKey;
+        signer.signatures = new ArrayList<>();
+        signer.signatures =
+                ApkSigningBlockUtils.generateSignaturesOverData(signerConfig, signer.signedData);
