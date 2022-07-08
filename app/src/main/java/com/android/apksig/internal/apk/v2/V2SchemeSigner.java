@@ -159,4 +159,48 @@ public abstract class V2SchemeSigner {
             List<SignerConfig> signerConfigs,
             Map<ContentDigestAlgorithm, byte[]> contentDigests,
             boolean v3SigningEnabled)
-                    throws NoSuchAlgorithmException, InvalidKeyException,
+                    throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        // FORMAT:
+        // * length-prefixed sequence of length-prefixed signer blocks.
+
+        List<byte[]> signerBlocks = new ArrayList<>(signerConfigs.size());
+        int signerNumber = 0;
+        for (SignerConfig signerConfig : signerConfigs) {
+            signerNumber++;
+            byte[] signerBlock;
+            try {
+                signerBlock = generateSignerBlock(signerConfig, contentDigests, v3SigningEnabled);
+            } catch (InvalidKeyException e) {
+                throw new InvalidKeyException("Signer #" + signerNumber + " failed", e);
+            } catch (SignatureException e) {
+                throw new SignatureException("Signer #" + signerNumber + " failed", e);
+            }
+            signerBlocks.add(signerBlock);
+        }
+
+        return Pair.of(encodeAsSequenceOfLengthPrefixedElements(
+                new byte[][] {
+                    encodeAsSequenceOfLengthPrefixedElements(signerBlocks),
+                }), APK_SIGNATURE_SCHEME_V2_BLOCK_ID);
+    }
+
+    private static byte[] generateSignerBlock(
+            SignerConfig signerConfig,
+            Map<ContentDigestAlgorithm, byte[]> contentDigests,
+            boolean v3SigningEnabled)
+                    throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        if (signerConfig.certificates.isEmpty()) {
+            throw new SignatureException("No certificates configured for signer");
+        }
+        PublicKey publicKey = signerConfig.certificates.get(0).getPublicKey();
+
+        byte[] encodedPublicKey = encodePublicKey(publicKey);
+
+        V2SignatureSchemeBlock.SignedData signedData = new V2SignatureSchemeBlock.SignedData();
+        try {
+            signedData.certificates = encodeCertificates(signerConfig.certificates);
+        } catch (CertificateEncodingException e) {
+            throw new SignatureException("Failed to encode certificates", e);
+        }
+
+        List<Pair<Integer,
