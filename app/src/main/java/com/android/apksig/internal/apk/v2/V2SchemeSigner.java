@@ -240,3 +240,48 @@ public abstract class V2SchemeSigner {
         signer.signatures = new ArrayList<>();
         signer.signatures =
                 ApkSigningBlockUtils.generateSignaturesOverData(signerConfig, signer.signedData);
+
+        // FORMAT:
+        // * length-prefixed signed data
+        // * length-prefixed sequence of length-prefixed signatures:
+        //   * uint32: signature algorithm ID
+        //   * length-prefixed bytes: signature of signed data
+        // * length-prefixed bytes: public key (X.509 SubjectPublicKeyInfo, ASN.1 DER encoded)
+        return encodeAsSequenceOfLengthPrefixedElements(
+                new byte[][] {
+                    signer.signedData,
+                    encodeAsSequenceOfLengthPrefixedPairsOfIntAndLengthPrefixedBytes(
+                            signer.signatures),
+                    signer.publicKey,
+                });
+    }
+
+    // Attribute to check whether a newer APK Signature Scheme signature was stripped
+    protected static final int STRIPPING_PROTECTION_ATTR_ID = 0xbeeff00d;
+
+    private static byte[] generateAdditionalAttributes(boolean v3SigningEnabled) {
+        if (v3SigningEnabled) {
+            // FORMAT (little endian):
+            // * length-prefixed bytes: attribute pair
+            //   * uint32: ID - STRIPPING_PROTECTION_ATTR_ID in this case
+            //   * uint32: value - 3 (v3 signature scheme id) in this case
+            int payloadSize = 4 + 4 + 4;
+            ByteBuffer result = ByteBuffer.allocate(payloadSize);
+            result.order(ByteOrder.LITTLE_ENDIAN);
+            result.putInt(payloadSize - 4);
+            result.putInt(STRIPPING_PROTECTION_ATTR_ID);
+            result.putInt(ApkSigningBlockUtils.VERSION_APK_SIGNATURE_SCHEME_V3);
+            return result.array();
+        } else {
+            return new byte[0];
+        }
+    }
+
+    private static final class V2SignatureSchemeBlock {
+        private static final class Signer {
+            public byte[] signedData;
+            public List<Pair<Integer, byte[]>> signatures;
+            public byte[] publicKey;
+        }
+
+        private static final class Si
