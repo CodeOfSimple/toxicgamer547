@@ -17,18 +17,7 @@
 package com.android.apksig.internal.asn1.ber;
 
 /**
- * Indicates that an ASN.1 data value being read could not be decoded using
- * Basic Encoding Rules (BER).
- */
-public class BerDataValueFormatException extends Exception {
-
-    private static final long serialVersionUID = 1L;
-
-    public BerDataValueFormatException(String message) {
-        super(message);
-    }
-
-    public BerDataValueFormatException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+ * Reader of ASN.1 Basic Encoding Rules (BER) data values.
+ *
+ * <p>BER data value reader returns data values, one by one, from a source. The interpretation of
+ * data values (e.g., how to obtain a n
