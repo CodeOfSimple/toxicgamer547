@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2017 The Android Open Source Project
  *
@@ -16,23 +17,20 @@
 
 package com.android.apksig.internal.asn1;
 
-import java.nio.ByteBuffer;
-
-/**
- * Opaque holder of encoded ASN.1 stuff.
- */
-public class Asn1OpaqueObject {
-    private final ByteBuffer mEncoded;
-
-    public Asn1OpaqueObject(ByteBuffer encoded) {
-        mEncoded = encoded.slice();
-    }
-
-    public Asn1OpaqueObject(byte[] encoded) {
-        mEncoded = ByteBuffer.wrap(encoded);
-    }
-
-    public ByteBuffer getEncoded() {
-        return mEncoded.slice();
-    }
+public enum Asn1Type {
+    ANY,
+    CHOICE,
+    INTEGER,
+    OBJECT_IDENTIFIER,
+    OCTET_STRING,
+    SEQUENCE,
+    SEQUENCE_OF,
+    SET_OF,
+    BIT_STRING,
+    UTC_TIME,
+    GENERALIZED_TIME,
+    BOOLEAN,
+    // This type can be used to annotate classes that encapsulate ASN.1 structures that are not
+    // classified as a SEQUENCE or SET.
+    UNENCODED_CONTAINER
 }
