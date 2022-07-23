@@ -110,4 +110,18 @@ public abstract class ManifestWriter {
         SortedMap<String, String> namedAttributes = new TreeMap<String, String>();
         for (Map.Entry<Object, Object> attribute : attributesEntries) {
             String attrName = attribute.getKey().toString();
-            String attrValue = attrib
+            String attrValue = attribute.getValue().toString();
+            namedAttributes.put(attrName, attrValue);
+        }
+        return namedAttributes;
+    }
+
+    static void writeAttributes(
+            OutputStream out, SortedMap<String, String> attributesSortedByName) throws IOException {
+        for (Map.Entry<String, String> attribute : attributesSortedByName.entrySet()) {
+            String attrName = attribute.getKey();
+            String attrValue = attribute.getValue();
+            writeAttribute(out, attrName, attrValue);
+        }
+    }
+}
