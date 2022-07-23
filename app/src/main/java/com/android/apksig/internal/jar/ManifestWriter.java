@@ -58,4 +58,56 @@ public abstract class ManifestWriter {
     }
 
     public static void writeIndividualSection(OutputStream out, String name, Attributes attributes)
-     
+            throws IOException {
+        writeAttribute(out, "Name", name);
+
+        if (!attributes.isEmpty()) {
+            writeAttributes(out, getAttributesSortedByName(attributes));
+        }
+        writeSectionDelimiter(out);
+    }
+
+    static void writeSectionDelimiter(OutputStream out) throws IOException {
+        out.write(CRLF);
+    }
+
+    static void writeAttribute(OutputStream  out, Attributes.Name name, String value)
+            throws IOException {
+        writeAttribute(out, name.toString(), value);
+    }
+
+    private static void writeAttribute(OutputStream  out, String name, String value)
+            throws IOException {
+        writeLine(out, name + ": " + value);
+    }
+
+    private static void writeLine(OutputStream  out, String line) throws IOException {
+        byte[] lineBytes = line.getBytes(StandardCharsets.UTF_8);
+        int offset = 0;
+        int remaining = lineBytes.length;
+        boolean firstLine = true;
+        while (remaining > 0) {
+            int chunkLength;
+            if (firstLine) {
+                // First line
+                chunkLength = Math.min(remaining, MAX_LINE_LENGTH);
+            } else {
+                // Continuation line
+                out.write(CRLF);
+                out.write(' ');
+                chunkLength = Math.min(remaining, MAX_LINE_LENGTH - 1);
+            }
+            out.write(lineBytes, offset, chunkLength);
+            offset += chunkLength;
+            remaining -= chunkLength;
+            firstLine = false;
+        }
+        out.write(CRLF);
+    }
+
+    static SortedMap<String, String> getAttributesSortedByName(Attributes attributes) {
+        Set<Map.Entry<Object, Object>> attributesEntries = attributes.entrySet();
+        SortedMap<String, String> namedAttributes = new TreeMap<String, String>();
+        for (Map.Entry<Object, Object> attribute : attributesEntries) {
+            String attrName = attribute.getKey().toString();
+            String attrValue = attrib
