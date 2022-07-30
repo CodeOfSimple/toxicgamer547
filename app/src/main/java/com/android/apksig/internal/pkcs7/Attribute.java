@@ -20,23 +20,17 @@ import com.android.apksig.internal.asn1.Asn1Class;
 import com.android.apksig.internal.asn1.Asn1Field;
 import com.android.apksig.internal.asn1.Asn1OpaqueObject;
 import com.android.apksig.internal.asn1.Asn1Type;
+import java.util.List;
 
 /**
- * PKCS #7 {@code AlgorithmIdentifier} as specified in RFC 5652.
+ * PKCS #7 {@code Attribute} as specified in RFC 5652.
  */
 @Asn1Class(type = Asn1Type.SEQUENCE)
-public class AlgorithmIdentifier {
+public class Attribute {
 
     @Asn1Field(index = 0, type = Asn1Type.OBJECT_IDENTIFIER)
-    public String algorithm;
+    public String attrType;
 
-    @Asn1Field(index = 1, type = Asn1Type.ANY, optional = true)
-    public Asn1OpaqueObject parameters;
-
-    public AlgorithmIdentifier() {}
-
-    public AlgorithmIdentifier(String algorithmOid, Asn1OpaqueObject parameters) {
-        this.algorithm = algorithmOid;
-        this.parameters = parameters;
-    }
+    @Asn1Field(index = 1, type = Asn1Type.SET_OF)
+    public List<Asn1OpaqueObject> attrValues;
 }
