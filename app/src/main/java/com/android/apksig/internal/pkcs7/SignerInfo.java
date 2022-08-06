@@ -18,25 +18,14 @@ package com.android.apksig.internal.pkcs7;
 
 import com.android.apksig.internal.asn1.Asn1Class;
 import com.android.apksig.internal.asn1.Asn1Field;
+import com.android.apksig.internal.asn1.Asn1OpaqueObject;
 import com.android.apksig.internal.asn1.Asn1Type;
 import com.android.apksig.internal.asn1.Asn1Tagging;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 /**
- * PKCS #7 {@code SignerIdentifier} as specified in RFC 5652.
+ * PKCS #7 {@code SignerInfo} as specified in RFC 5652.
  */
-@Asn1Class(type = Asn1Type.CHOICE)
-public class SignerIdentifier {
-
-    @Asn1Field(type = Asn1Type.SEQUENCE)
-    public IssuerAndSerialNumber issuerAndSerialNumber;
-
-    @Asn1Field(type = Asn1Type.OCTET_STRING, tagging = Asn1Tagging.IMPLICIT, tagNumber = 0)
-    public ByteBuffer subjectKeyIdentifier;
-
-    public SignerIdentifier() {}
-
-    public SignerIdentifier(IssuerAndSerialNumber issuerAndSerialNumber) {
-        this.issuerAndSerialNumber = issuerAndSerialNumber;
-    }
-}
+@Asn1Class(type = Asn1Type.SEQUENCE)
+public c
