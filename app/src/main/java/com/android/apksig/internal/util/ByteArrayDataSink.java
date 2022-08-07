@@ -95,4 +95,58 @@ public class ByteArrayDataSink implements ReadableDataSink {
         }
 
         long minCapacity = ((long) mSize) + minAvailable;
-        if (minCapacity <= mArr
+        if (minCapacity <= mArray.length) {
+            return;
+        }
+        if (minCapacity > Integer.MAX_VALUE) {
+            throw new IOException(
+                    "Required capacity too large: " + minCapacity + ", max: " + Integer.MAX_VALUE);
+        }
+        int doubleCurrentSize = (int) Math.min(mArray.length * 2L, Integer.MAX_VALUE);
+        int newSize = (int) Math.max(minCapacity, doubleCurrentSize);
+        mArray = Arrays.copyOf(mArray, newSize);
+    }
+
+    @Override
+    public long size() {
+        return mSize;
+    }
+
+    @Override
+    public ByteBuffer getByteBuffer(long offset, int size) {
+        checkChunkValid(offset, size);
+
+        // checkChunkValid ensures that it's OK to cast offset to int.
+        return ByteBuffer.wrap(mArray, (int) offset, size).slice();
+    }
+
+    @Override
+    public void feed(long offset, long size, DataSink sink) throws IOException {
+        checkChunkValid(offset, size);
+
+        // checkChunkValid ensures that it's OK to cast offset and size to int.
+        sink.consume(mArray, (int) offset, (int) size);
+    }
+
+    @Override
+    public void copyTo(long offset, int size, ByteBuffer dest) throws IOException {
+        checkChunkValid(offset, size);
+
+        // checkChunkValid ensures that it's OK to cast offset to int.
+        dest.put(mArray, (int) offset, size);
+    }
+
+    private void checkChunkValid(long offset, long size) {
+        if (offset < 0) {
+            throw new IndexOutOfBoundsException("offset: " + offset);
+        }
+        if (size < 0) {
+            throw new IndexOutOfBoundsException("size: " + size);
+        }
+        if (offset > mSize) {
+            throw new IndexOutOfBoundsException(
+                    "offset (" + offset + ") > source size (" + mSize + ")");
+        }
+        long endOffset = offset + size;
+        if (endOffset < offset) {
+            throw new IndexOutOfBoundsExcep
