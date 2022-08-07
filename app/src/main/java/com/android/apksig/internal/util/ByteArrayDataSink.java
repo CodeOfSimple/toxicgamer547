@@ -39,4 +39,60 @@ public class ByteArrayDataSink implements ReadableDataSink {
     }
 
     public ByteArrayDataSink(int initialCapacity) {
-        if (initialCapacity < 0) 
+        if (initialCapacity < 0) {
+            throw new IllegalArgumentException("initial capacity: " + initialCapacity);
+        }
+        mArray = new byte[initialCapacity];
+    }
+
+    @Override
+    public void consume(byte[] buf, int offset, int length) throws IOException {
+        if (offset < 0) {
+            // Must perform this check because System.arraycopy below doesn't perform it when
+            // length == 0
+            throw new IndexOutOfBoundsException("offset: " + offset);
+        }
+        if (offset > buf.length) {
+            // Must perform this check because System.arraycopy below doesn't perform it when
+            // length == 0
+            throw new IndexOutOfBoundsException(
+                    "offset: " + offset + ", buf.length: " + buf.length);
+        }
+        if (length == 0) {
+            return;
+        }
+
+        ensureAvailable(length);
+        System.arraycopy(buf, offset, mArray, mSize, length);
+        mSize += length;
+    }
+
+    @Override
+    public void consume(ByteBuffer buf) throws IOException {
+        if (!buf.hasRemaining()) {
+            return;
+        }
+
+        if (buf.hasArray()) {
+            consume(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
+            buf.position(buf.limit());
+            return;
+        }
+
+        ensureAvailable(buf.remaining());
+        byte[] tmp = new byte[Math.min(buf.remaining(), MAX_READ_CHUNK_SIZE)];
+        while (buf.hasRemaining()) {
+            int chunkSize = Math.min(buf.remaining(), tmp.length);
+            buf.get(tmp, 0, chunkSize);
+            System.arraycopy(tmp, 0, mArray, mSize, chunkSize);
+            mSize += chunkSize;
+        }
+    }
+
+    private void ensureAvailable(int minAvailable) throws IOException {
+        if (minAvailable <= 0) {
+            return;
+        }
+
+        long minCapacity = ((long) mSize) + minAvailable;
+        if (minCapacity <= mArr
