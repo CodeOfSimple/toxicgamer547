@@ -198,4 +198,43 @@ public class ByteArrayDataSink implements ReadableDataSink {
             return ByteBuffer.wrap(mArray, (int) (mSliceOffset + offset), size).slice();
         }
 
-      
+        @Override
+        public void copyTo(long offset, int size, ByteBuffer dest) throws IOException {
+            checkChunkValid(offset, size);
+            // checkChunkValid combined with the way instances of this class are constructed ensures
+            // that mSliceOffset + offset does not overflow.
+            dest.put(mArray, (int) (mSliceOffset + offset), size);
+        }
+
+        @Override
+        public DataSource slice(long offset, long size) {
+            checkChunkValid(offset, size);
+            // checkChunkValid combined with the way instances of this class are constructed ensures
+            // that mSliceOffset + offset does not overflow and that it's fine to cast size to int.
+            return new SliceDataSource((int) (mSliceOffset + offset), (int) size);
+        }
+
+        private void checkChunkValid(long offset, long size) {
+            if (offset < 0) {
+                throw new IndexOutOfBoundsException("offset: " + offset);
+            }
+            if (size < 0) {
+                throw new IndexOutOfBoundsException("size: " + size);
+            }
+            if (offset > mSliceSize) {
+                throw new IndexOutOfBoundsException(
+                        "offset (" + offset + ") > source size (" + mSliceSize + ")");
+            }
+            long endOffset = offset + size;
+            if (endOffset < offset) {
+                throw new IndexOutOfBoundsException(
+                        "offset (" + offset + ") + size (" + size + ") overflow");
+            }
+            if (endOffset > mSliceSize) {
+                throw new IndexOutOfBoundsException(
+                        "offset (" + offset + ") + size (" + size + ") > source size (" + mSliceSize
+                                + ")");
+            }
+        }
+    }
+}
