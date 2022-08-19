@@ -79,3 +79,48 @@ public class ByteBufferDataSource implements DataSource {
     public void copyTo(long offset, int size, ByteBuffer dest) {
         dest.put(getByteBuffer(offset, size));
     }
+
+    @Override
+    public void feed(long offset, long size, DataSink sink) throws IOException {
+        if ((size < 0) || (size > mSize)) {
+            throw new IndexOutOfBoundsException("size: " + size + ", source size: " + mSize);
+        }
+        sink.consume(getByteBuffer(offset, (int) size));
+    }
+
+    @Override
+    public ByteBufferDataSource slice(long offset, long size) {
+        if ((offset == 0) && (size == mSize)) {
+            return this;
+        }
+        if ((size < 0) || (size > mSize)) {
+            throw new IndexOutOfBoundsException("size: " + size + ", source size: " + mSize);
+        }
+        return new ByteBufferDataSource(
+                getByteBuffer(offset, (int) size),
+                false // no need to slice -- it's already a slice
+                );
+    }
+
+    private void checkChunkValid(long offset, long size) {
+        if (offset < 0) {
+            throw new IndexOutOfBoundsException("offset: " + offset);
+        }
+        if (size < 0) {
+            throw new IndexOutOfBoundsException("size: " + size);
+        }
+        if (offset > mSize) {
+            throw new IndexOutOfBoundsException(
+                    "offset (" + offset + ") > source size (" + mSize + ")");
+        }
+        long endOffset = offset + size;
+        if (endOffset < offset) {
+            throw new IndexOutOfBoundsException(
+                    "offset (" + offset + ") + size (" + size + ") overflow");
+        }
+        if (endOffset > mSize) {
+            throw new IndexOutOfBoundsException(
+                    "offset (" + offset + ") + size (" + size + ") > source size (" + mSize  +")");
+        }
+    }
+}
