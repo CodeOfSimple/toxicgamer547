@@ -16,26 +16,15 @@
 
 package com.android.apksig.internal.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 /**
- * Utilities for byte arrays and I/O streams.
+ * {@link X509Certificate} whose {@link #getEncoded()} returns the data provided at construction
+ * time.
  */
-public final class ByteStreams {
-    private ByteStreams() {}
+public class GuaranteedEncodedFormX509Certificate extends DelegatingX509Certificate {
+    private static final long serialVersionUID = 1L;
 
-    /**
-     * Returns the data remaining in the provided input stream as a byte array
-     */
-    public static byte[] toByteArray(InputStream in) throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        byte[] buf = new byte[16384];
-        int chunkSize;
-        while ((chunkSize = in.read(buf)) != -1) {
-            result.write(buf, 0, chunkSize);
-        }
-        return result.toByteArray();
-    }
-}
+    private final b
