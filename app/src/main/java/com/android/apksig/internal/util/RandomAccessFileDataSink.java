@@ -70,4 +70,35 @@ public class RandomAccessFileDataSink implements DataSink {
             throw new IndexOutOfBoundsException("offset: " + offset);
         }
         if (offset > buf.length) {
-            // Must perform this check here because RandomAccessFile.write doesn't throw when off
+            // Must perform this check here because RandomAccessFile.write doesn't throw when offset
+            // is too large but length is 0
+            throw new IndexOutOfBoundsException(
+                    "offset: " + offset + ", buf.length: " + buf.length);
+        }
+        if (length == 0) {
+            return;
+        }
+
+        synchronized (mFile) {
+            mFile.seek(mPosition);
+            mFile.write(buf, offset, length);
+            mPosition += length;
+        }
+    }
+
+    @Override
+    public void consume(ByteBuffer buf) throws IOException {
+        int length = buf.remaining();
+        if (length == 0) {
+            return;
+        }
+
+        synchronized (mFile) {
+            mFile.seek(mPosition);
+            while (buf.hasRemaining()) {
+                mFileChannel.write(buf);
+            }
+            mPosition += length;
+        }
+    }
+}
