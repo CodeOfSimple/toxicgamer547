@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2018 The Android Open Source Project
  *
@@ -18,18 +19,22 @@ package com.android.apksig.internal.x509;
 
 import com.android.apksig.internal.asn1.Asn1Class;
 import com.android.apksig.internal.asn1.Asn1Field;
-import com.android.apksig.internal.asn1.Asn1OpaqueObject;
 import com.android.apksig.internal.asn1.Asn1Type;
+import com.android.apksig.internal.pkcs7.AlgorithmIdentifier;
+
+import java.nio.ByteBuffer;
 
 /**
- * {@code AttributeTypeAndValue} as specified in RFC 5280.
+ * X509 {@code Certificate} as specified in RFC 5280.
  */
 @Asn1Class(type = Asn1Type.SEQUENCE)
-public class AttributeTypeAndValue {
+public class Certificate {
+    @Asn1Field(index = 0, type = Asn1Type.SEQUENCE)
+    public TBSCertificate certificate;
 
-    @Asn1Field(index = 0, type = Asn1Type.OBJECT_IDENTIFIER)
-    public String attrType;
+    @Asn1Field(index = 1, type = Asn1Type.SEQUENCE)
+    public AlgorithmIdentifier signatureAlgorithm;
 
-    @Asn1Field(index = 1, type = Asn1Type.ANY)
-    public Asn1OpaqueObject attrValue;
+    @Asn1Field(index = 2, type = Asn1Type.BIT_STRING)
+    public ByteBuffer signature;
 }

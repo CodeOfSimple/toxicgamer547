@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2018 The Android Open Source Project
  *
@@ -18,18 +19,21 @@ package com.android.apksig.internal.x509;
 
 import com.android.apksig.internal.asn1.Asn1Class;
 import com.android.apksig.internal.asn1.Asn1Field;
-import com.android.apksig.internal.asn1.Asn1OpaqueObject;
 import com.android.apksig.internal.asn1.Asn1Type;
 
+import java.nio.ByteBuffer;
+
 /**
- * {@code AttributeTypeAndValue} as specified in RFC 5280.
+ * X509 {@code Extension} as specified in RFC 5280.
  */
 @Asn1Class(type = Asn1Type.SEQUENCE)
-public class AttributeTypeAndValue {
-
+public class Extension {
     @Asn1Field(index = 0, type = Asn1Type.OBJECT_IDENTIFIER)
-    public String attrType;
+    public String extensionID;
 
-    @Asn1Field(index = 1, type = Asn1Type.ANY)
-    public Asn1OpaqueObject attrValue;
+    @Asn1Field(index = 1, type = Asn1Type.BOOLEAN, optional = true)
+    public boolean isCritial = false;
+
+    @Asn1Field(index = 2, type = Asn1Type.OCTET_STRING)
+    public ByteBuffer extensionValue;
 }
