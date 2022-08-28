@@ -21,14 +21,14 @@ import com.android.apksig.internal.asn1.Asn1Field;
 import com.android.apksig.internal.asn1.Asn1Type;
 
 /**
- * {@code Time} as specified in RFC 5280.
+ * {@code Validity} as specified in RFC 5280.
  */
-@Asn1Class(type = Asn1Type.CHOICE)
-public class Time {
+@Asn1Class(type = Asn1Type.SEQUENCE)
+public class Validity {
 
-    @Asn1Field(type = Asn1Type.UTC_TIME)
-    public String utcTime;
+    @Asn1Field(index = 0, type = Asn1Type.CHOICE)
+    public Time notBefore;
 
-    @Asn1Field(type = Asn1Type.GENERALIZED_TIME)
-    public String generalizedTime;
+    @Asn1Field(index = 1, type = Asn1Type.CHOICE)
+    public Time notAfter;
 }
