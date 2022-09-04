@@ -123,4 +123,43 @@ public class LocalFileRecord {
     public static LocalFileRecord getRecord(
             DataSource apk,
             CentralDirectoryRecord cdRecord,
-    
+            long cdStartOffset) throws ZipFormatException, IOException {
+        return getRecord(
+                apk,
+                cdRecord,
+                cdStartOffset,
+                true, // obtain extra field contents
+                true // include Data Descriptor (if present)
+                );
+    }
+
+    /**
+     * Returns the Local File record starting at the current position of the provided buffer
+     * and advances the buffer's position immediately past the end of the record. The record
+     * consists of the Local File Header, data, and (if present) Data Descriptor.
+     */
+    private static LocalFileRecord getRecord(
+            DataSource apk,
+            CentralDirectoryRecord cdRecord,
+            long cdStartOffset,
+            boolean extraFieldContentsNeeded,
+            boolean dataDescriptorIncluded) throws ZipFormatException, IOException {
+        // IMPLEMENTATION NOTE: This method attempts to mimic the behavior of Android platform
+        // exhibited when reading an APK for the purposes of verifying its signatures.
+
+        String entryName = cdRecord.getName();
+        int cdRecordEntryNameSizeBytes = cdRecord.getNameSizeBytes();
+        int headerSizeWithName = HEADER_SIZE_BYTES + cdRecordEntryNameSizeBytes;
+        long headerStartOffset = cdRecord.getLocalFileHeaderOffset();
+        long headerEndOffset = headerStartOffset + headerSizeWithName;
+        if (headerEndOffset > cdStartOffset) {
+            throw new ZipFormatException(
+                    "Local File Header of " + entryName + " extends beyond start of Central"
+                            + " Directory. LFH end: " + headerEndOffset
+                            + ", CD start: " + cdStartOffset);
+        }
+        ByteBuffer header;
+        try {
+            header = apk.getByteBuffer(headerStartOffset, headerSizeWithName);
+        } catch (IOException e) {
+            throw new IOExcept
