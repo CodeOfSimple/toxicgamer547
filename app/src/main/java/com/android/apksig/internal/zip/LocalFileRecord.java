@@ -55,4 +55,72 @@ public class LocalFileRecord {
     private final long mStartOffsetInArchive;
     private final long mSize;
 
-    private final int mDataStar
+    private final int mDataStartOffset;
+    private final long mDataSize;
+    private final boolean mDataCompressed;
+    private final long mUncompressedDataSize;
+
+    private LocalFileRecord(
+            String name,
+            int nameSizeBytes,
+            ByteBuffer extra,
+            long startOffsetInArchive,
+            long size,
+            int dataStartOffset,
+            long dataSize,
+            boolean dataCompressed,
+            long uncompressedDataSize) {
+        mName = name;
+        mNameSizeBytes = nameSizeBytes;
+        mExtra = extra;
+        mStartOffsetInArchive = startOffsetInArchive;
+        mSize = size;
+        mDataStartOffset = dataStartOffset;
+        mDataSize = dataSize;
+        mDataCompressed = dataCompressed;
+        mUncompressedDataSize = uncompressedDataSize;
+    }
+
+    public String getName() {
+        return mName;
+    }
+
+    public ByteBuffer getExtra() {
+        return (mExtra.capacity() > 0) ? mExtra.slice() : mExtra;
+    }
+
+    public int getExtraFieldStartOffsetInsideRecord() {
+        return HEADER_SIZE_BYTES + mNameSizeBytes;
+    }
+
+    public long getStartOffsetInArchive() {
+        return mStartOffsetInArchive;
+    }
+
+    public int getDataStartOffsetInRecord() {
+        return mDataStartOffset;
+    }
+
+    /**
+     * Returns the size (in bytes) of this record.
+     */
+    public long getSize() {
+        return mSize;
+    }
+
+    /**
+     * Returns {@code true} if this record's file data is stored in compressed form.
+     */
+    public boolean isDataCompressed() {
+        return mDataCompressed;
+    }
+
+    /**
+     * Returns the Local File record starting at the current position of the provided buffer
+     * and advances the buffer's position immediately past the end of the record. The record
+     * consists of the Local File Header, data, and (if present) Data Descriptor.
+     */
+    public static LocalFileRecord getRecord(
+            DataSource apk,
+            CentralDirectoryRecord cdRecord,
+    
