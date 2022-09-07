@@ -162,4 +162,36 @@ public class LocalFileRecord {
         try {
             header = apk.getByteBuffer(headerStartOffset, headerSizeWithName);
         } catch (IOException e) {
-            throw new IOExcept
+            throw new IOException("Failed to read Local File Header of " + entryName, e);
+        }
+        header.order(ByteOrder.LITTLE_ENDIAN);
+
+        int recordSignature = header.getInt();
+        if (recordSignature != RECORD_SIGNATURE) {
+            throw new ZipFormatException(
+                    "Not a Local File Header record for entry " + entryName + ". Signature: 0x"
+                            + Long.toHexString(recordSignature & 0xffffffffL));
+        }
+        short gpFlags = header.getShort(GP_FLAGS_OFFSET);
+        boolean dataDescriptorUsed = (gpFlags & ZipUtils.GP_FLAG_DATA_DESCRIPTOR_USED) != 0;
+        boolean cdDataDescriptorUsed =
+                (cdRecord.getGpFlags() & ZipUtils.GP_FLAG_DATA_DESCRIPTOR_USED) != 0;
+        if (dataDescriptorUsed != cdDataDescriptorUsed) {
+            throw new ZipFormatException(
+                    "Data Descriptor presence mismatch between Local File Header and Central"
+                            + " Directory for entry " + entryName
+                            + ". LFH: " + dataDescriptorUsed + ", CD: " + cdDataDescriptorUsed);
+        }
+        long uncompressedDataCrc32FromCdRecord = cdRecord.getCrc32();
+        long compressedDataSizeFromCdRecord = cdRecord.getCompressedSize();
+        long uncompressedDataSizeFromCdRecord = cdRecord.getUncompressedSize();
+        if (!dataDescriptorUsed) {
+            long crc32 = ZipUtils.getUnsignedInt32(header, CRC32_OFFSET);
+            if (crc32 != uncompressedDataCrc32FromCdRecord) {
+                throw new ZipFormatException(
+                        "CRC-32 mismatch between Local File Header and Central Directory for entry "
+                                + entryName + ". LFH: " + crc32
+                                + ", CD: " + uncompressedDataCrc32FromCdRecord);
+            }
+            long compressedSize = ZipUtils.getUnsignedInt32(header, COMPRESSED_SIZE_OFFSET);
+       
