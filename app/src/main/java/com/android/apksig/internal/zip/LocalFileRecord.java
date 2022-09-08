@@ -194,4 +194,35 @@ public class LocalFileRecord {
                                 + ", CD: " + uncompressedDataCrc32FromCdRecord);
             }
             long compressedSize = ZipUtils.getUnsignedInt32(header, COMPRESSED_SIZE_OFFSET);
-       
+            if (compressedSize != compressedDataSizeFromCdRecord) {
+                throw new ZipFormatException(
+                        "Compressed size mismatch between Local File Header and Central Directory"
+                                + " for entry " + entryName + ". LFH: " + compressedSize
+                                + ", CD: " + compressedDataSizeFromCdRecord);
+            }
+            long uncompressedSize = ZipUtils.getUnsignedInt32(header, UNCOMPRESSED_SIZE_OFFSET);
+            if (uncompressedSize != uncompressedDataSizeFromCdRecord) {
+                throw new ZipFormatException(
+                        "Uncompressed size mismatch between Local File Header and Central Directory"
+                                + " for entry " + entryName + ". LFH: " + uncompressedSize
+                                + ", CD: " + uncompressedDataSizeFromCdRecord);
+            }
+        }
+        int nameLength = ZipUtils.getUnsignedInt16(header, NAME_LENGTH_OFFSET);
+        if (nameLength > cdRecordEntryNameSizeBytes) {
+            throw new ZipFormatException(
+                    "Name mismatch between Local File Header and Central Directory for entry"
+                            + entryName + ". LFH: " + nameLength
+                            + " bytes, CD: " + cdRecordEntryNameSizeBytes + " bytes");
+        }
+        String name = CentralDirectoryRecord.getName(header, NAME_OFFSET, nameLength);
+        if (!entryName.equals(name)) {
+            throw new ZipFormatException(
+                    "Name mismatch between Local File Header and Central Directory. LFH: \""
+                            + name + "\", CD: \"" + entryName + "\"");
+        }
+        int extraLength = ZipUtils.getUnsignedInt16(header, EXTRA_LENGTH_OFFSET);
+        long dataStartOffset = headerStartOffset + HEADER_SIZE_BYTES + nameLength + extraLength;
+        long dataSize;
+        boolean compressed =
+                
