@@ -225,4 +225,35 @@ public class LocalFileRecord {
         long dataStartOffset = headerStartOffset + HEADER_SIZE_BYTES + nameLength + extraLength;
         long dataSize;
         boolean compressed =
-                
+                (cdRecord.getCompressionMethod() != ZipUtils.COMPRESSION_METHOD_STORED);
+        if (compressed) {
+            dataSize = compressedDataSizeFromCdRecord;
+        } else {
+            dataSize = uncompressedDataSizeFromCdRecord;
+        }
+        long dataEndOffset = dataStartOffset + dataSize;
+        if (dataEndOffset > cdStartOffset) {
+            throw new ZipFormatException(
+                    "Local File Header data of " + entryName + " overlaps with Central Directory"
+                            + ". LFH data start: " + dataStartOffset
+                            + ", LFH data end: " + dataEndOffset + ", CD start: " + cdStartOffset);
+        }
+
+        ByteBuffer extra = EMPTY_BYTE_BUFFER;
+        if ((extraFieldContentsNeeded) && (extraLength > 0)) {
+            extra = apk.getByteBuffer(
+                    headerStartOffset + HEADER_SIZE_BYTES + nameLength, extraLength);
+        }
+
+        long recordEndOffset = dataEndOffset;
+        // Include the Data Descriptor (if requested and present) into the record.
+        if ((dataDescriptorIncluded) && ((gpFlags & ZipUtils.GP_FLAG_DATA_DESCRIPTOR_USED) != 0)) {
+            // The record's data is supposed to be followed by the Data Descriptor. Unfortunately,
+            // the descriptor's size is not known in advance because the spec lets the signature
+            // field (the first four bytes) be omitted. Thus, there's no 100% reliable way to tell
+            // how long the Data Descriptor record is. Most parsers (including Android) check
+            // whether the first four bytes look like Data Descriptor record signature and, if so,
+            // assume that it is indeed the record's signature. However, this is the wrong
+            // conclusion if the record's CRC-32 (next field after the signature) has the same value
+            // as the signature. In any case, we're doing what Android is doing.
+            long dataDescriptorEndOffs
