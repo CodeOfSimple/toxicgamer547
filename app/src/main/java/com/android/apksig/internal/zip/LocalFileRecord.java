@@ -256,4 +256,46 @@ public class LocalFileRecord {
             // assume that it is indeed the record's signature. However, this is the wrong
             // conclusion if the record's CRC-32 (next field after the signature) has the same value
             // as the signature. In any case, we're doing what Android is doing.
-            long dataDescriptorEndOffs
+            long dataDescriptorEndOffset =
+                    dataEndOffset + DATA_DESCRIPTOR_SIZE_BYTES_WITHOUT_SIGNATURE;
+            if (dataDescriptorEndOffset > cdStartOffset) {
+                throw new ZipFormatException(
+                        "Data Descriptor of " + entryName + " overlaps with Central Directory"
+                                + ". Data Descriptor end: " + dataEndOffset
+                                + ", CD start: " + cdStartOffset);
+            }
+            ByteBuffer dataDescriptorPotentialSig = apk.getByteBuffer(dataEndOffset, 4);
+            dataDescriptorPotentialSig.order(ByteOrder.LITTLE_ENDIAN);
+            if (dataDescriptorPotentialSig.getInt() == DATA_DESCRIPTOR_SIGNATURE) {
+                dataDescriptorEndOffset += 4;
+                if (dataDescriptorEndOffset > cdStartOffset) {
+                    throw new ZipFormatException(
+                            "Data Descriptor of " + entryName + " overlaps with Central Directory"
+                                    + ". Data Descriptor end: " + dataEndOffset
+                                    + ", CD start: " + cdStartOffset);
+                }
+            }
+            recordEndOffset = dataDescriptorEndOffset;
+        }
+
+        long recordSize = recordEndOffset - headerStartOffset;
+        int dataStartOffsetInRecord = HEADER_SIZE_BYTES + nameLength + extraLength;
+
+        return new LocalFileRecord(
+                entryName,
+                cdRecordEntryNameSizeBytes,
+                extra,
+                headerStartOffset,
+                recordSize,
+                dataStartOffsetInRecord,
+                dataSize,
+                compressed,
+                uncompressedDataSizeFromCdRecord);
+    }
+
+    /**
+     * Outputs this record and returns returns the number of bytes output.
+     */
+    public long outputRecord(DataSource sourceApk, DataSink output) throws IOException {
+        long size = getSize();
+        sourceApk.feed(getStar
