@@ -298,4 +298,49 @@ public class LocalFileRecord {
      */
     public long outputRecord(DataSource sourceApk, DataSink output) throws IOException {
         long size = getSize();
-        sourceApk.feed(getStar
+        sourceApk.feed(getStartOffsetInArchive(), size, output);
+        return size;
+    }
+
+    /**
+     * Outputs this record, replacing its extra field with the provided one, and returns returns the
+     * number of bytes output.
+     */
+    public long outputRecordWithModifiedExtra(
+            DataSource sourceApk,
+            ByteBuffer extra,
+            DataSink output) throws IOException {
+        long recordStartOffsetInSource = getStartOffsetInArchive();
+        int extraStartOffsetInRecord = getExtraFieldStartOffsetInsideRecord();
+        int extraSizeBytes = extra.remaining();
+        int headerSize = extraStartOffsetInRecord + extraSizeBytes;
+        ByteBuffer header = ByteBuffer.allocate(headerSize);
+        header.order(ByteOrder.LITTLE_ENDIAN);
+        sourceApk.copyTo(recordStartOffsetInSource, extraStartOffsetInRecord, header);
+        header.put(extra.slice());
+        header.flip();
+        ZipUtils.setUnsignedInt16(header, EXTRA_LENGTH_OFFSET, extraSizeBytes);
+
+        long outputByteCount = header.remaining();
+        output.consume(header);
+        long remainingRecordSize = getSize() - mDataStartOffset;
+        sourceApk.feed(recordStartOffsetInSource + mDataStartOffset, remainingRecordSize, output);
+        outputByteCount += remainingRecordSize;
+        return outputByteCount;
+    }
+
+    /**
+     * Outputs the specified Local File Header record with its data and returns the number of bytes
+     * output.
+     */
+    public static long outputRecordWithDeflateCompressedData(
+            String name,
+            int lastModifiedTime,
+            int lastModifiedDate,
+            byte[] compressedData,
+            long crc32,
+            long uncompressedSize,
+            DataSink output) throws IOException {
+        byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+        int recordSize = HEADER_SIZE_BYTES + nameBytes.length;
+        ByteBuffer result = ByteBuffer.allo
