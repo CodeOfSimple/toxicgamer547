@@ -343,4 +343,44 @@ public class LocalFileRecord {
             DataSink output) throws IOException {
         byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
         int recordSize = HEADER_SIZE_BYTES + nameBytes.length;
-        ByteBuffer result = ByteBuffer.allo
+        ByteBuffer result = ByteBuffer.allocate(recordSize);
+        result.order(ByteOrder.LITTLE_ENDIAN);
+        result.putInt(RECORD_SIGNATURE);
+        ZipUtils.putUnsignedInt16(result,  0x14); // Minimum version needed to extract
+        result.putShort(ZipUtils.GP_FLAG_EFS); // General purpose flag: UTF-8 encoded name
+        result.putShort(ZipUtils.COMPRESSION_METHOD_DEFLATED);
+        ZipUtils.putUnsignedInt16(result, lastModifiedTime);
+        ZipUtils.putUnsignedInt16(result, lastModifiedDate);
+        ZipUtils.putUnsignedInt32(result, crc32);
+        ZipUtils.putUnsignedInt32(result, compressedData.length);
+        ZipUtils.putUnsignedInt32(result, uncompressedSize);
+        ZipUtils.putUnsignedInt16(result, nameBytes.length);
+        ZipUtils.putUnsignedInt16(result, 0); // Extra field length
+        result.put(nameBytes);
+        if (result.hasRemaining()) {
+            throw new RuntimeException("pos: " + result.position() + ", limit: " + result.limit());
+        }
+        result.flip();
+
+        long outputByteCount = result.remaining();
+        output.consume(result);
+        outputByteCount += compressedData.length;
+        output.consume(compressedData, 0, compressedData.length);
+        return outputByteCount;
+    }
+
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0);
+
+    /**
+     * Sends uncompressed data of this record into the the provided data sink.
+     */
+    public void outputUncompressedData(
+            DataSource lfhSection,
+            DataSink sink) throws IOException, ZipFormatException {
+        long dataStartOffsetInArchive = mStartOffsetInArchive + mDataStartOffset;
+        try {
+            if (mDataCompressed) {
+                try (InflateSinkAdapter inflateAdapter = new InflateSinkAdapter(sink)) {
+                    lfhSection.feed(dataStartOffsetInArchive, mDataSize, inflateAdapter);
+                    long actualUncompressedSize = inflateAdapter.getOutputByteCount();
+          
