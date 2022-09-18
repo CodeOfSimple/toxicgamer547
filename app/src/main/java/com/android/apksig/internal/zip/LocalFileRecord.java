@@ -383,4 +383,41 @@ public class LocalFileRecord {
                 try (InflateSinkAdapter inflateAdapter = new InflateSinkAdapter(sink)) {
                     lfhSection.feed(dataStartOffsetInArchive, mDataSize, inflateAdapter);
                     long actualUncompressedSize = inflateAdapter.getOutputByteCount();
-          
+                    if (actualUncompressedSize != mUncompressedDataSize) {
+                        throw new ZipFormatException(
+                                "Unexpected size of uncompressed data of " + mName
+                                        + ". Expected: " + mUncompressedDataSize + " bytes"
+                                        + ", actual: " + actualUncompressedSize + " bytes");
+                    }
+                } catch (IOException e) {
+                    if (e.getCause() instanceof DataFormatException) {
+                        throw new ZipFormatException("Data of entry " + mName + " malformed", e);
+                    }
+                    throw e;
+                }
+            } else {
+                lfhSection.feed(dataStartOffsetInArchive, mDataSize, sink);
+                // No need to check whether output size is as expected because DataSource.feed is
+                // guaranteed to output exactly the number of bytes requested.
+            }
+        } catch (IOException e) {
+            throw new IOException(
+                    "Failed to read data of " + ((mDataCompressed) ? "compressed" : "uncompressed")
+                        + " entry " + mName,
+                    e);
+        }
+        // Interestingly, Android doesn't check that uncompressed data's CRC-32 is as expected. We
+        // thus don't check either.
+    }
+
+    /**
+     * Sends uncompressed data pointed to by the provided ZIP Central Directory (CD) record into the
+     * provided data sink.
+     */
+    public static void outputUncompressedData(
+            DataSource source,
+            CentralDirectoryRecord cdRecord,
+            long cdStartOffsetInArchive,
+            DataSink sink) throws ZipFormatException, IOException {
+        // IMPLEMENTATION NOTE: This method attempts to mimic the behavior of Android platform
+        // exhibited when reading an APK for the purpos
