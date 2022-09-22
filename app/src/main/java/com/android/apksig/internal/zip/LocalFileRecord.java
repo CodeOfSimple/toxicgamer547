@@ -420,4 +420,49 @@ public class LocalFileRecord {
             long cdStartOffsetInArchive,
             DataSink sink) throws ZipFormatException, IOException {
         // IMPLEMENTATION NOTE: This method attempts to mimic the behavior of Android platform
-        // exhibited when reading an APK for the purpos
+        // exhibited when reading an APK for the purposes of verifying its signatures.
+        // When verifying an APK, Android doesn't care reading the extra field or the Data
+        // Descriptor.
+        LocalFileRecord lfhRecord =
+                getRecord(
+                        source,
+                        cdRecord,
+                        cdStartOffsetInArchive,
+                        false, // don't care about the extra field
+                        false // don't read the Data Descriptor
+                        );
+        lfhRecord.outputUncompressedData(source, sink);
+    }
+
+    /**
+     * Returns the uncompressed data pointed to by the provided ZIP Central Directory (CD) record.
+     */
+    public static byte[] getUncompressedData(
+            DataSource source,
+            CentralDirectoryRecord cdRecord,
+            long cdStartOffsetInArchive) throws ZipFormatException, IOException {
+        if (cdRecord.getUncompressedSize() > Integer.MAX_VALUE) {
+            throw new IOException(
+                    cdRecord.getName() + " too large: " + cdRecord.getUncompressedSize());
+        }
+        byte[] result = new byte[(int) cdRecord.getUncompressedSize()];
+        ByteBuffer resultBuf = ByteBuffer.wrap(result);
+        ByteBufferSink resultSink = new ByteBufferSink(resultBuf);
+        outputUncompressedData(
+                source,
+                cdRecord,
+                cdStartOffsetInArchive,
+                resultSink);
+        return result;
+    }
+
+    /**
+     * {@link DataSink} which inflates received data and outputs the deflated data into the provided
+     * delegate sink.
+     */
+    private static class InflateSinkAdapter implements DataSink, Closeable {
+        private final DataSink mDelegate;
+
+        private Inflater mInflater = new Inflater(true);
+        private byte[] mOutputBuffer;
+        pr
