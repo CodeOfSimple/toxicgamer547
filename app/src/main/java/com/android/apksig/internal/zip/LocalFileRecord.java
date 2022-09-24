@@ -519,4 +519,19 @@ public class LocalFileRecord {
 
         @Override
         public void close() throws IOException {
-      
+            mClosed = true;
+            mInputBuffer = null;
+            mOutputBuffer = null;
+            if (mInflater != null) {
+                mInflater.end();
+                mInflater = null;
+            }
+        }
+
+        private void checkNotClosed() {
+            if (mClosed) {
+                throw new IllegalStateException("Closed");
+            }
+        }
+    }
+}
