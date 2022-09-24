@@ -465,4 +465,58 @@ public class LocalFileRecord {
 
         private Inflater mInflater = new Inflater(true);
         private byte[] mOutputBuffer;
-        pr
+        private byte[] mInputBuffer;
+        private long mOutputByteCount;
+        private boolean mClosed;
+
+        private InflateSinkAdapter(DataSink delegate) {
+            mDelegate = delegate;
+        }
+
+        @Override
+        public void consume(byte[] buf, int offset, int length) throws IOException {
+            checkNotClosed();
+            mInflater.setInput(buf, offset, length);
+            if (mOutputBuffer == null) {
+                mOutputBuffer = new byte[65536];
+            }
+            while (!mInflater.finished()) {
+                int outputChunkSize;
+                try {
+                    outputChunkSize = mInflater.inflate(mOutputBuffer);
+                } catch (DataFormatException e) {
+                    throw new IOException("Failed to inflate data", e);
+                }
+                if (outputChunkSize == 0) {
+                    return;
+                }
+                mDelegate.consume(mOutputBuffer, 0, outputChunkSize);
+                mOutputByteCount += outputChunkSize;
+            }
+        }
+
+        @Override
+        public void consume(ByteBuffer buf) throws IOException {
+            checkNotClosed();
+            if (buf.hasArray()) {
+                consume(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
+                buf.position(buf.limit());
+            } else {
+                if (mInputBuffer == null) {
+                    mInputBuffer = new byte[65536];
+                }
+                while (buf.hasRemaining()) {
+                    int chunkSize = Math.min(buf.remaining(), mInputBuffer.length);
+                    buf.get(mInputBuffer, 0, chunkSize);
+                    consume(mInputBuffer, 0, chunkSize);
+                }
+            }
+        }
+
+        public long getOutputByteCount() {
+            return mOutputByteCount;
+        }
+
+        @Override
+        public void close() throws IOException {
+      
