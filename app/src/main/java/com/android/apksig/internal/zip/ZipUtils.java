@@ -41,4 +41,47 @@ public abstract class ZipUtils {
     public static final short GP_FLAG_EFS = 0x0800;
 
     private static final int ZIP_EOCD_REC_MIN_SIZE = 22;
-    private static final int ZIP_EOCD_REC_SIG = 0x0
+    private static final int ZIP_EOCD_REC_SIG = 0x06054b50;
+    private static final int ZIP_EOCD_CENTRAL_DIR_TOTAL_RECORD_COUNT_OFFSET = 10;
+    private static final int ZIP_EOCD_CENTRAL_DIR_SIZE_FIELD_OFFSET = 12;
+    private static final int ZIP_EOCD_CENTRAL_DIR_OFFSET_FIELD_OFFSET = 16;
+    private static final int ZIP_EOCD_COMMENT_LENGTH_FIELD_OFFSET = 20;
+
+    private static final int UINT16_MAX_VALUE = 0xffff;
+
+    /**
+     * Sets the offset of the start of the ZIP Central Directory in the archive.
+     *
+     * <p>NOTE: Byte order of {@code zipEndOfCentralDirectory} must be little-endian.
+     */
+    public static void setZipEocdCentralDirectoryOffset(
+            ByteBuffer zipEndOfCentralDirectory, long offset) {
+        assertByteOrderLittleEndian(zipEndOfCentralDirectory);
+        setUnsignedInt32(
+                zipEndOfCentralDirectory,
+                zipEndOfCentralDirectory.position() + ZIP_EOCD_CENTRAL_DIR_OFFSET_FIELD_OFFSET,
+                offset);
+    }
+
+    /**
+     * Returns the offset of the start of the ZIP Central Directory in the archive.
+     *
+     * <p>NOTE: Byte order of {@code zipEndOfCentralDirectory} must be little-endian.
+     */
+    public static long getZipEocdCentralDirectoryOffset(ByteBuffer zipEndOfCentralDirectory) {
+        assertByteOrderLittleEndian(zipEndOfCentralDirectory);
+        return getUnsignedInt32(
+                zipEndOfCentralDirectory,
+                zipEndOfCentralDirectory.position() + ZIP_EOCD_CENTRAL_DIR_OFFSET_FIELD_OFFSET);
+    }
+
+    /**
+     * Returns the size (in bytes) of the ZIP Central Directory.
+     *
+     * <p>NOTE: Byte order of {@code zipEndOfCentralDirectory} must be little-endian.
+     */
+    public static long getZipEocdCentralDirectorySizeBytes(ByteBuffer zipEndOfCentralDirectory) {
+        assertByteOrderLittleEndian(zipEndOfCentralDirectory);
+        return getUnsignedInt32(
+                zipEndOfCentralDirectory,
+                zipEndOfCentralDi
