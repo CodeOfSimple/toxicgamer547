@@ -84,4 +84,41 @@ public abstract class ZipUtils {
         assertByteOrderLittleEndian(zipEndOfCentralDirectory);
         return getUnsignedInt32(
                 zipEndOfCentralDirectory,
-                zipEndOfCentralDi
+                zipEndOfCentralDirectory.position() + ZIP_EOCD_CENTRAL_DIR_SIZE_FIELD_OFFSET);
+    }
+
+    /**
+     * Returns the total number of records in ZIP Central Directory.
+     *
+     * <p>NOTE: Byte order of {@code zipEndOfCentralDirectory} must be little-endian.
+     */
+    public static int getZipEocdCentralDirectoryTotalRecordCount(
+            ByteBuffer zipEndOfCentralDirectory) {
+        assertByteOrderLittleEndian(zipEndOfCentralDirectory);
+        return getUnsignedInt16(
+                zipEndOfCentralDirectory,
+                zipEndOfCentralDirectory.position()
+                        + ZIP_EOCD_CENTRAL_DIR_TOTAL_RECORD_COUNT_OFFSET);
+    }
+
+    /**
+     * Returns the ZIP End of Central Directory record of the provided ZIP file.
+     *
+     * @return contents of the ZIP End of Central Directory record and the record's offset in the
+     *         file or {@code null} if the file does not contain the record.
+     *
+     * @throws IOException if an I/O error occurs while reading the file.
+     */
+    public static Pair<ByteBuffer, Long> findZipEndOfCentralDirectoryRecord(DataSource zip)
+            throws IOException {
+        // ZIP End of Central Directory (EOCD) record is located at the very end of the ZIP archive.
+        // The record can be identified by its 4-byte signature/magic which is located at the very
+        // beginning of the record. A complication is that the record is variable-length because of
+        // the comment field.
+        // The algorithm for locating the ZIP EOCD record is as follows. We search backwards from
+        // end of the buffer for the EOCD record signature. Whenever we find a signature, we check
+        // the candidate record's comment length is such that the remainder of the record takes up
+        // exactly the remaining bytes in the buffer. The search is bounded because the maximum
+        // size of the comment field is 65535 bytes because the field is an unsigned 16-bit number.
+
+        lon
