@@ -121,4 +121,39 @@ public abstract class ZipUtils {
         // exactly the remaining bytes in the buffer. The search is bounded because the maximum
         // size of the comment field is 65535 bytes because the field is an unsigned 16-bit number.
 
-        lon
+        long fileSize = zip.size();
+        if (fileSize < ZIP_EOCD_REC_MIN_SIZE) {
+            return null;
+        }
+
+        // Optimization: 99.99% of APKs have a zero-length comment field in the EoCD record and thus
+        // the EoCD record offset is known in advance. Try that offset first to avoid unnecessarily
+        // reading more data.
+        Pair<ByteBuffer, Long> result = findZipEndOfCentralDirectoryRecord(zip, 0);
+        if (result != null) {
+            return result;
+        }
+
+        // EoCD does not start where we expected it to. Perhaps it contains a non-empty comment
+        // field. Expand the search. The maximum size of the comment field in EoCD is 65535 because
+        // the comment length field is an unsigned 16-bit number.
+        return findZipEndOfCentralDirectoryRecord(zip, UINT16_MAX_VALUE);
+    }
+
+    /**
+     * Returns the ZIP End of Central Directory record of the provided ZIP file.
+     *
+     * @param maxCommentSize maximum accepted size (in bytes) of EoCD comment field. The permitted
+     *        value is from 0 to 65535 inclusive. The smaller the value, the faster this method
+     *        locates the record, provided its comment field is no longer than this value.
+     *
+     * @return contents of the ZIP End of Central Directory record and the record's offset in the
+     *         file or {@code null} if the file does not contain the record.
+     *
+     * @throws IOException if an I/O error occurs while reading the file.
+     */
+    private static Pair<ByteBuffer, Long> findZipEndOfCentralDirectoryRecord(
+            DataSource zip, int maxCommentSize) throws IOException {
+        // ZIP End of Central Directory (EOCD) record is located at the very end of the ZIP archive.
+        // The record can be identified by its 4-byte signature/magic which is located at the very
+        // beginning of the record. A complication is that the record is variabl
