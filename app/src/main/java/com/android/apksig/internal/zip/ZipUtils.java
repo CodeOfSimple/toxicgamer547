@@ -196,4 +196,35 @@ public abstract class ZipUtils {
      * Returns the position at which ZIP End of Central Directory record starts in the provided
      * buffer or {@code -1} if the record is not present.
      *
-     * <p>NOTE: Byte order of {@code zipContents} must be little
+     * <p>NOTE: Byte order of {@code zipContents} must be little-endian.
+     */
+    private static int findZipEndOfCentralDirectoryRecord(ByteBuffer zipContents) {
+        assertByteOrderLittleEndian(zipContents);
+
+        // ZIP End of Central Directory (EOCD) record is located at the very end of the ZIP archive.
+        // The record can be identified by its 4-byte signature/magic which is located at the very
+        // beginning of the record. A complication is that the record is variable-length because of
+        // the comment field.
+        // The algorithm for locating the ZIP EOCD record is as follows. We search backwards from
+        // end of the buffer for the EOCD record signature. Whenever we find a signature, we check
+        // the candidate record's comment length is such that the remainder of the record takes up
+        // exactly the remaining bytes in the buffer. The search is bounded because the maximum
+        // size of the comment field is 65535 bytes because the field is an unsigned 16-bit number.
+
+        int archiveSize = zipContents.capacity();
+        if (archiveSize < ZIP_EOCD_REC_MIN_SIZE) {
+            return -1;
+        }
+        int maxCommentLength = Math.min(archiveSize - ZIP_EOCD_REC_MIN_SIZE, UINT16_MAX_VALUE);
+        int eocdWithEmptyCommentStartPosition = archiveSize - ZIP_EOCD_REC_MIN_SIZE;
+        for (int expectedCommentLength = 0; expectedCommentLength <= maxCommentLength;
+                expectedCommentLength++) {
+            int eocdStartPos = eocdWithEmptyCommentStartPosition - expectedCommentLength;
+            if (zipContents.getInt(eocdStartPos) == ZIP_EOCD_REC_SIG) {
+                int actualCommentLength =
+                        getUnsignedInt16(
+                                zipContents, eocdStartPos + ZIP_EOCD_COMMENT_LENGTH_FIELD_OFFSET);
+                if (actualCommentLength == expectedCommentLength) {
+                    return eocdStartPos;
+                }
+    
