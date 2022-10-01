@@ -156,4 +156,44 @@ public abstract class ZipUtils {
             DataSource zip, int maxCommentSize) throws IOException {
         // ZIP End of Central Directory (EOCD) record is located at the very end of the ZIP archive.
         // The record can be identified by its 4-byte signature/magic which is located at the very
-        // beginning of the record. A complication is that the record is variabl
+        // beginning of the record. A complication is that the record is variable-length because of
+        // the comment field.
+        // The algorithm for locating the ZIP EOCD record is as follows. We search backwards from
+        // end of the buffer for the EOCD record signature. Whenever we find a signature, we check
+        // the candidate record's comment length is such that the remainder of the record takes up
+        // exactly the remaining bytes in the buffer. The search is bounded because the maximum
+        // size of the comment field is 65535 bytes because the field is an unsigned 16-bit number.
+
+        if ((maxCommentSize < 0) || (maxCommentSize > UINT16_MAX_VALUE)) {
+            throw new IllegalArgumentException("maxCommentSize: " + maxCommentSize);
+        }
+
+        long fileSize = zip.size();
+        if (fileSize < ZIP_EOCD_REC_MIN_SIZE) {
+            // No space for EoCD record in the file.
+            return null;
+        }
+        // Lower maxCommentSize if the file is too small.
+        maxCommentSize = (int) Math.min(maxCommentSize, fileSize - ZIP_EOCD_REC_MIN_SIZE);
+
+        int maxEocdSize = ZIP_EOCD_REC_MIN_SIZE + maxCommentSize;
+        long bufOffsetInFile = fileSize - maxEocdSize;
+        ByteBuffer buf = zip.getByteBuffer(bufOffsetInFile, maxEocdSize);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        int eocdOffsetInBuf = findZipEndOfCentralDirectoryRecord(buf);
+        if (eocdOffsetInBuf == -1) {
+            // No EoCD record found in the buffer
+            return null;
+        }
+        // EoCD found
+        buf.position(eocdOffsetInBuf);
+        ByteBuffer eocd = buf.slice();
+        eocd.order(ByteOrder.LITTLE_ENDIAN);
+        return Pair.of(eocd, bufOffsetInFile + eocdOffsetInBuf);
+    }
+
+    /**
+     * Returns the position at which ZIP End of Central Directory record starts in the provided
+     * buffer or {@code -1} if the record is not present.
+     *
+     * <p>NOTE: Byte order of {@code zipContents} must be little
