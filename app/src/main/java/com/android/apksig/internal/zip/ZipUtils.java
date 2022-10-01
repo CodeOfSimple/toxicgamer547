@@ -285,3 +285,41 @@ public abstract class ZipUtils {
 
     public static DeflateResult deflate(ByteBuffer input) {
         byte[] inputBuf;
+        int inputOffset;
+        int inputLength = input.remaining();
+        if (input.hasArray()) {
+            inputBuf = input.array();
+            inputOffset = input.arrayOffset() + input.position();
+            input.position(input.limit());
+        } else {
+            inputBuf = new byte[inputLength];
+            inputOffset = 0;
+            input.get(inputBuf);
+        }
+        CRC32 crc32 = new CRC32();
+        crc32.update(inputBuf, inputOffset, inputLength);
+        long crc32Value = crc32.getValue();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Deflater deflater = new Deflater(9, true);
+        deflater.setInput(inputBuf, inputOffset, inputLength);
+        deflater.finish();
+        byte[] buf = new byte[65536];
+        while (!deflater.finished()) {
+            int chunkSize = deflater.deflate(buf);
+            out.write(buf, 0, chunkSize);
+        }
+        return new DeflateResult(inputLength, crc32Value, out.toByteArray());
+    }
+
+    public static class DeflateResult {
+        public final int inputSizeBytes;
+        public final long inputCrc32;
+        public final byte[] output;
+
+        public DeflateResult(int inputSizeBytes, long inputCrc32, byte[] output) {
+            this.inputSizeBytes = inputSizeBytes;
+            this.inputCrc32 = inputCrc32;
+            this.output = output;
+        }
+    }
+}
