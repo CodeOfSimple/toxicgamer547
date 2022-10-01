@@ -227,4 +227,61 @@ public abstract class ZipUtils {
                 if (actualCommentLength == expectedCommentLength) {
                     return eocdStartPos;
                 }
-    
+            }
+        }
+
+        return -1;
+    }
+
+    static void assertByteOrderLittleEndian(ByteBuffer buffer) {
+        if (buffer.order() != ByteOrder.LITTLE_ENDIAN) {
+            throw new IllegalArgumentException("ByteBuffer byte order must be little endian");
+        }
+    }
+
+    public static int getUnsignedInt16(ByteBuffer buffer, int offset) {
+        return buffer.getShort(offset) & 0xffff;
+    }
+
+    public static int getUnsignedInt16(ByteBuffer buffer) {
+        return buffer.getShort() & 0xffff;
+    }
+
+    static void setUnsignedInt16(ByteBuffer buffer, int offset, int value) {
+        if ((value < 0) || (value > 0xffff)) {
+            throw new IllegalArgumentException("uint16 value of out range: " + value);
+        }
+        buffer.putShort(offset, (short) value);
+    }
+
+    static void setUnsignedInt32(ByteBuffer buffer, int offset, long value) {
+        if ((value < 0) || (value > 0xffffffffL)) {
+            throw new IllegalArgumentException("uint32 value of out range: " + value);
+        }
+        buffer.putInt(offset, (int) value);
+    }
+
+    public static void putUnsignedInt16(ByteBuffer buffer, int value) {
+        if ((value < 0) || (value > 0xffff)) {
+            throw new IllegalArgumentException("uint16 value of out range: " + value);
+        }
+        buffer.putShort((short) value);
+    }
+
+    static long getUnsignedInt32(ByteBuffer buffer, int offset) {
+        return buffer.getInt(offset) & 0xffffffffL;
+    }
+
+    static long getUnsignedInt32(ByteBuffer buffer) {
+        return buffer.getInt() & 0xffffffffL;
+    }
+
+    static void putUnsignedInt32(ByteBuffer buffer, long value) {
+        if ((value < 0) || (value > 0xffffffffL)) {
+            throw new IllegalArgumentException("uint32 value of out range: " + value);
+        }
+        buffer.putInt((int) value);
+    }
+
+    public static DeflateResult deflate(ByteBuffer input) {
+        byte[] inputBuf;
