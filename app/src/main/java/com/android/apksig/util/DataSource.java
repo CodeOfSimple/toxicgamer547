@@ -41,4 +41,45 @@ import java.nio.ByteBuffer;
  *     methods of obtaining the chunk's data may be more appropriate.</li>
  * <li>Obtain a {@link ByteBuffer} containing the chunk's data using
  *     {@link #getByteBuffer(long, int) getByteBuffer}. Depending on the data source, the chunk's
- *     data may or may not be copied by this operatio
+ *     data may or may not be copied by this operation. This is best suited for scenarios where
+ *     you need to access the chunk's data in arbitrary order, but don't need to modify the data and
+ *     thus don't require a copy of the data.</li>
+ * <li>Copy the chunk's data to a {@link ByteBuffer} using
+ *     {@link #copyTo(long, int, ByteBuffer) copyTo}. This is best suited for scenarios where
+ *     you require a copy of the chunk's data, such as to when you need to modify the data.
+ *     </li>
+ * </ul>
+ */
+public interface DataSource {
+
+    /**
+     * Returns the amount of data (in bytes) contained in this data source.
+     */
+    long size();
+
+    /**
+     * Feeds the specified chunk from this data source into the provided sink.
+     *
+     * @param offset index (in bytes) at which the chunk starts inside data source
+     * @param size size (in bytes) of the chunk
+     *
+     * @throws IndexOutOfBoundsException if {@code offset} or {@code size} is negative, or if
+     *         {@code offset + size} is greater than {@link #size()}.
+     */
+    void feed(long offset, long size, DataSink sink) throws IOException;
+
+    /**
+     * Returns a buffer holding the contents of the specified chunk of data from this data source.
+     * Changes to the data source are not guaranteed to be reflected in the returned buffer.
+     * Similarly, changes in the buffer are not guaranteed to be reflected in the data source.
+     *
+     * <p>The returned buffer's position is {@code 0}, and the buffer's limit and capacity is
+     * {@code size}.
+     *
+     * @param offset index (in bytes) at which the chunk starts inside data source
+     * @param size size (in bytes) of the chunk
+     *
+     * @throws IndexOutOfBoundsException if {@code offset} or {@code size} is negative, or if
+     *         {@code offset + size} is greater than {@link #size()}.
+     */
+    Byt
