@@ -82,4 +82,29 @@ public interface DataSource {
      * @throws IndexOutOfBoundsException if {@code offset} or {@code size} is negative, or if
      *         {@code offset + size} is greater than {@link #size()}.
      */
-    Byt
+    ByteBuffer getByteBuffer(long offset, int size) throws IOException;
+
+    /**
+     * Copies the specified chunk from this data source into the provided destination buffer,
+     * advancing the destination buffer's position by {@code size}.
+     *
+     * @param offset index (in bytes) at which the chunk starts inside data source
+     * @param size size (in bytes) of the chunk
+     *
+     * @throws IndexOutOfBoundsException if {@code offset} or {@code size} is negative, or if
+     *         {@code offset + size} is greater than {@link #size()}.
+     */
+    void copyTo(long offset, int size, ByteBuffer dest) throws IOException;
+
+    /**
+     * Returns a data source representing the specified region of data of this data source. Changes
+     * to data represented by this data source will also be visible in the returned data source.
+     *
+     * @param offset index (in bytes) at which the region starts inside data source
+     * @param size size (in bytes) of the region
+     *
+     * @throws IndexOutOfBoundsException if {@code offset} or {@code size} is negative, or if
+     *         {@code offset + size} is greater than {@link #size()}.
+     */
+    DataSource slice(long offset, long size);
+}
