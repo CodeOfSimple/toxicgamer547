@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +17,8 @@
 
 package com.android.apksig.util;
 
-/**
- * {@link DataSink} which exposes all data consumed so far as a {@link DataSource}. This abstraction
- * offers append-only write access and random read access.
- */
-public interface ReadableDataSink extends DataSink, DataSource {
+public interface RunnablesExecutor {
+    RunnablesExecutor SINGLE_THREADED = p -> p.getRunnable().run();
+
+    void execute(RunnablesProvider provider);
 }

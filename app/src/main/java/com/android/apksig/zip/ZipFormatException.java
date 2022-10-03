@@ -14,11 +14,4 @@
  * limitations under the License.
  */
 
-package com.android.apksig.util;
-
-/**
- * {@link DataSink} which exposes all data consumed so far as a {@link DataSource}. This abstraction
- * offers append-only write access and random read access.
- */
-public interface ReadableDataSink extends DataSink, DataSource {
-}
+package com.android.apk
