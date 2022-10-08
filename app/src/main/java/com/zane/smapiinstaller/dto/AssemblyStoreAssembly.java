@@ -8,4 +8,6 @@ public class AssemblyStoreAssembly {
     private Integer dataSize;
     private Integer debugDataOffset;
     private Integer debugDataSize;
-    private Integer configD
+    private Integer configDataOffset;
+    private Integer configDataSize;
+}
