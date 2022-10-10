@@ -77,4 +77,58 @@ public class ModUpdateCheckRequestDto {
             }
             List<String> versionSections = Splitter.on(CharMatcher.anyOf(".-+")).splitToList(versionStr);
             // read major/minor version
-    
+            int i = 0;
+            if (versionSections.size() > i) {
+                MajorVersion = Integer.parseInt(versionSections.get(i));
+            }
+            else {
+                return;
+            }
+            i++;
+            if (versionSections.size() > i) {
+                MinorVersion = Integer.parseInt(versionSections.get(i));
+            }
+            else {
+                return;
+            }
+            i++;
+            // read optional patch version
+            if (versionSections.size() > i) {
+                PatchVersion = Integer.parseInt(versionSections.get(i));
+            }
+            else {
+                return;
+            }
+            i++;
+            // read optional non-standard platform release version
+            try {
+                if (versionSections.size() > i) {
+                    PlatformRelease = Integer.parseInt(versionSections.get(i));
+                }
+                else {
+                    return;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            // read optional prerelease tag
+            versionSections = Splitter.on("-").limit(2).splitToList(versionStr);
+            if (versionSections.size() > 1) {
+                PrereleaseTag = RegExUtils.removeFirst(versionSections.get(1), "\\+.*");
+            }
+            else {
+                return;
+            }
+            // read optional build tag
+            versionSections = Splitter.on("+").limit(2).splitToList(versionStr);
+            if (versionSections.size() > 1) {
+                BuildMetadata = versionSections.get(1);
+            }
+        }
+    }
+
+    @Data
+    @EqualsAndHashCode(of = "id")
+    public static class ModInfo {
+        private String id;
+        private List<String> updateKeys;
+        private SemanticVersion installedVersion
