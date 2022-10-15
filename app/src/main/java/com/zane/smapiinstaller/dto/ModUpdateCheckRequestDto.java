@@ -131,4 +131,18 @@ public class ModUpdateCheckRequestDto {
     public static class ModInfo {
         private String id;
         private List<String> updateKeys;
-        private SemanticVersion installedVersion
+        private SemanticVersion installedVersion;
+
+        public static ModInfo fromModManifestEntry(ModManifestEntry mod) {
+            ModInfo modInfo = new ModInfo();
+            modInfo.setId(mod.getUniqueID());
+            try {
+                modInfo.setInstalledVersion(new SemanticVersion(mod.getVersion()));
+            } catch (Exception e) {
+                Log.d("", "", e);
+            }
+            modInfo.setUpdateKeys(mod.getUpdateKeys());
+            return modInfo;
+        }
+    }
+}
