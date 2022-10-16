@@ -42,4 +42,17 @@ public class ManifestEntry {
     private String patchedCrc;
 
     /**
-     *
+     * 是否为高级模式补丁
+     */
+    private boolean advanced;
+    /**
+     * 是否为XALZ压缩格式
+     */
+    @JsonProperty("isXALZ")
+    private boolean isXALZ;
+    /**
+     * 是否为XABA压缩格式
+     */
+    @JsonProperty("isXABA")
+    private boolean isXABA;
+}
