@@ -52,4 +52,18 @@ public class TranslationResult {
         return this.translation;
     }
     public void setTranslation(String translation) {
-        this.translation = 
+        this.translation = translation;
+    }
+    public Long getCreateTime() {
+        return this.createTime;
+    }
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
+    public String getTranslator() {
+        return this.translator;
+    }
+    public void setTranslator(String translator) {
+        this.translator = translator;
+    }
+}
