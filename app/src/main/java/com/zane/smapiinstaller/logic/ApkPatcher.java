@@ -425,3 +425,137 @@ public class ApkPatcher {
                             "debug",
                             privateKey,
                             Collections.singletonList(publicKey))
+                            .build());
+            DefaultApkSignerEngine signerEngine = new DefaultApkSignerEngine.Builder(engineSignerConfigs, 19)
+                    .setV1SigningEnabled(true)
+                    .setV2SigningEnabled(true)
+                    .setV3SigningEnabled(false)
+                    .build();
+            if (originSignInfo != null && originSignInfo.getFirst() != null) {
+                signerEngine.initWith(originSignInfo.getFirst(), originSignInfo.getSecond());
+            }
+            long zipOpElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            stopwatch.reset();
+            Thread thread = new Thread(() -> {
+                stopwatch.start();
+                while (true) {
+                    try {
+                        Thread.sleep(200);
+                        long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+                        double progress = elapsed * 0.98 / zipOpElapsed;
+                        if (progress < 1.0) {
+                            emitProgress((int) (49 + 45 * progress));
+                        }
+                    } catch (InterruptedException ignored) {
+                        return;
+                    }
+                }
+            });
+            thread.start();
+            try (RandomAccessFile inputApkFile = new RandomAccessFile(apkPath, "r")) {
+                ApkSigner signer = new ApkSigner.Builder(signerEngine)
+                        .setInputApk(DataSources.asDataSource(inputApkFile, 0, inputApkFile.length()))
+                        .setOutputApk(outputFile)
+                        .build();
+                signer.sign();
+            }
+            FileUtils.forceDelete(new File(apkPath));
+            ApkVerifier.Result result = new ApkVerifier.Builder(outputFile).build().verify();
+            if (thread.isAlive() && !thread.isInterrupted()) {
+                thread.interrupt();
+            }
+            if (result.containsErrors() && result.getErrors().size() > 0) {
+                errorMessage.set(result.getErrors().stream().map(ApkVerifier.IssueWithParams::toString).collect(Collectors.joining(",")));
+                return null;
+            }
+            emitProgress(95);
+            return signApkPath;
+        } catch (Exception e) {
+            Log.e(TAG, "Sign error", e);
+            errorMessage.set(e.getLocalizedMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 对指定安装包发起安装
+     *
+     * @param apkPath             安装包路径
+     */
+    public void install(String apkPath) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            boolean haveInstallPermission = context.getPackageManager().canRequestPackageInstalls();
+            if (!haveInstallPermission) {
+                DialogUtils.showConfirmDialog(MainActivity.instance, R.string.confirm, R.string.request_unknown_source_permission, ((dialog, dialogAction) -> {
+                    if (dialogAction == DialogAction.POSITIVE) {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                        intent.setData(Uri.parse("package:" + context.getPackageName()));
+                        ActivityResultHandler.registerListener(ActivityResultHandler.REQUEST_CODE_APP_INSTALL, (resultCode, data) -> this.install(apkPath));
+                        MainActivity.instance.startActivityForResult(intent, ActivityResultHandler.REQUEST_CODE_APP_INSTALL);
+                    }
+                }));
+                return;
+            }
+        }
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(fromFile(new File(apkPath)), "application/vnd.android.package-archive");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Log.e(TAG, "Install error", e);
+            errorMessage.set(e.getLocalizedMessage());
+        }
+    }
+
+    /**
+     * Gets the URI from a file
+     *
+     * @param file = The file to try and get the URI from
+     * @return The URI for the file
+     */
+    private Uri fromFile(File file) {
+        //Android versions greater than Nougat use FileProvider, others use the URI.fromFile.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", file);
+        } else {
+            return Uri.fromFile(file);
+        }
+    }
+
+    /**
+     * 获取报错内容
+     *
+     * @return 报错内容
+     */
+    public AtomicReference<String> getErrorMessage() {
+        return errorMessage;
+    }
+
+    public String getGamePackageName() {
+        return gamePackageName.get();
+    }
+
+    public long getGameVersionCode() {
+        return gameVersionCode.get();
+    }
+
+    public AtomicInteger getSwitchAction() {
+        return switchAction;
+    }
+
+    private void emitProgress(int progress) {
+        if (lastProgress < progress) {
+            lastProgress = progress;
+            for (Consumer<Integer> consumer : progressListener) {
+                consumer.accept(progress);
+            }
+        }
+    }
+
+    public void registerProgressListener(Consumer<Integer> listener) {
+        progressListener.add(listener);
+    }
+}
