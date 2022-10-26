@@ -39,4 +39,44 @@ public class GameLauncher {
                 packageInfo = packageManager.getPackageInfo(Constants.TARGET_PACKAGE_NAME_SAMSUNG, 0);
             }
             return packageInfo;
-        } catch (PackageM
+        } catch (PackageManager.NameNotFoundException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 启动逻辑
+     */
+    public void launch() {
+        Activity context = CommonLogic.getActivityFromView(root);
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            PackageInfo packageInfo = getGamePackageInfo(context);
+            if(packageInfo == null) {
+                DialogUtils.showAlertDialog(root, R.string.error, R.string.error_smapi_not_installed);
+                return;
+            }
+            long versionCode;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                versionCode = packageInfo.getLongVersionCode();
+            }
+            else {
+                versionCode = packageInfo.versionCode;
+            }
+            if(!CommonLogic.unpackSmapiFiles(context, packageInfo.applicationInfo.publicSourceDir, true, CommonLogic.computePackageName(packageInfo), versionCode)) {
+                DialogUtils.showAlertDialog(root, R.string.error, R.string.error_failed_to_repair);
+                return;
+            }
+            ModAssetsManager modAssetsManager = new ModAssetsManager(root);
+            modAssetsManager.checkModEnvironment((isConfirm) -> {
+                if(isConfirm) {
+                    Intent intent = packageManager.getLaunchIntentForPackage(packageInfo.packageName);
+                    context.startActivity(intent);
+                }
+            });
+        } catch (Exception e) {
+            Crashes.trackError(e);
+            DialogUtils.showAlertDialog(root, R.string.error, e.getLocalizedMessage());
+        }
+    }
+}
