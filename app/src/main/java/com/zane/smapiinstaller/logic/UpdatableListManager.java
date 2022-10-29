@@ -77,4 +77,8 @@ public class UpdatableListManager<T extends UpdatableList> implements Listenable
         return (T) updatableList;
     }
 
-    @Over
+    @Override
+    public List<Predicate<T>> getOnChangedListenerList() {
+        return onChangedListener;
+    }
+}
