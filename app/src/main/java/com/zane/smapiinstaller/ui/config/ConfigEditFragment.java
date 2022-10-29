@@ -50,4 +50,37 @@ public class ConfigEditFragment extends Fragment {
     private Boolean virtualKeyboardConfigMode;
     private String configPath;
 
-    pri
+    private FragmentConfigEditBinding binding;
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentConfigEditBinding.inflate(inflater, container, false);
+        initView();
+        binding.buttonConfigCancel.setOnClickListener(v -> onConfigCancel());
+        binding.buttonConfigSave.setOnClickListener(v -> onConfigSave());
+        binding.buttonLogParser.setOnClickListener(v -> onLogParser());
+        return binding.getRoot();
+    }
+
+    private void initView() {
+        CommonLogic.doOnNonNull(this.getArguments(), arguments -> {
+            ConfigEditFragmentArgs args = ConfigEditFragmentArgs.fromBundle(arguments);
+            editable = args.getEditable();
+            virtualKeyboardConfigMode = args.getVirtualKeyboardConfigMode();
+            if (!editable) {
+                binding.buttonConfigSave.setVisibility(View.INVISIBLE);
+                binding.buttonConfigCancel.setVisibility(View.INVISIBLE);
+                binding.buttonLogParser.setVisibility(View.VISIBLE);
+            }
+            configPath = args.getConfigPath();
+            File file = new File(configPath);
+            if (file.exists() && file.length() < Constants.TEXT_FILE_OPEN_SIZE_LIMIT) {
+                initAssetWebView();
+                binding.scrollView.post(() -> CommonLogic.doOnNonNull(this.getContext(), (context -> onScrollViewRendered(file, context))));
+            } else {
+                DialogUtils.showConfirmDialog(binding.getRoot(), R.string.error, this.getString(R.string.text_too_large), R.string.open_with, R.string.cancel, ((dialog, which) -> {
+                    if (which == DialogAction.POSITIVE) {
+                        Intent intent = new Intent("android.intent.action.VIEW");
+                        intent.addCategory("android.intent.category.DEFAULT");
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
