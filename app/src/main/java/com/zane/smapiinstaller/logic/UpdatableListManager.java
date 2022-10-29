@@ -28,4 +28,53 @@ public class UpdatableListManager<T extends UpdatableList> implements Listenable
 
     private static UpdatableList updatableList = null;
 
-    private final List<Predicate<T>> onChangedListener = new Array
+    private final List<Predicate<T>> onChangedListener = new ArrayList<>();
+
+    /**
+     * @param root      context容器
+     * @param filename  本地文件名
+     * @param tClass    目标类型
+     * @param updateUrl 更新地址
+     */
+    public UpdatableListManager(View root, String filename, Class<T> tClass, String updateUrl) {
+        updatableList = FileUtils.getLocaledAssetJson(root.getContext(), filename, tClass);
+        Boolean updated = updateChecked.get(tClass);
+        if(updated == null || !updated) {
+            updateChecked.put(tClass, true);
+            String languageSuffix = '.' + MultiLanguages.getAppLanguage().getLanguage();
+            updateList(root, tClass, updateUrl, filename, languageSuffix);
+        }
+    }
+
+    private void updateList(View root, Class<T> tClass, String updateUrl, String filename, String languageSuffix) {
+        String finalUpdateUrl = updateUrl + languageSuffix;
+        String finalFilename = filename + languageSuffix;
+        OkGo.<String>get(finalUpdateUrl).execute(new StringCallback(){
+            @Override
+            public void onError(Response<String> response) {
+                if(StringUtils.isNoneBlank(languageSuffix)) {
+                    updateList(root, tClass, updateUrl, filename, "");
+                }
+                super.onError(response);
+            }
+
+            @Override
+            public void onSuccess(Response<String> response) {
+                UpdatableList content = JsonUtil.fromJson(response.body(), tClass);
+                if(content != null && updatableList.getVersion() < content.getVersion()) {
+                    FileUtils.writeAssetJson(root.getContext(), finalFilename, content);
+                    updatableList = content;
+                    emitDataChangeEvent(getList());
+                }
+            }
+        });
+    }
+
+    /**
+     * @return 列表
+     */
+    public T getList() {
+        return (T) updatableList;
+    }
+
+    @Over
