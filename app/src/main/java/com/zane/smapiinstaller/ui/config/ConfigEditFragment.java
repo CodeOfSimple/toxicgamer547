@@ -131,4 +131,39 @@ public class ConfigEditFragment extends Fragment {
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this.requireContext()))
                 .build();
-        binding.editTextConfigWebview.setWebViewClient(new WebViewClient()
+        binding.editTextConfigWebview.setWebViewClient(new WebViewClient() {
+            @Override
+            @RequiresApi(21)
+            public WebResourceResponse shouldInterceptRequest(WebView view,
+                                                              WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            @SuppressWarnings("deprecation") // for API < 21
+            public WebResourceResponse shouldInterceptRequest(WebView view,
+                                                              String url) {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url));
+            }
+        });
+        WebSettings webViewSettings = binding.editTextConfigWebview.getSettings();
+        webViewSettings.setAllowFileAccess(false);
+        webViewSettings.setAllowContentAccess(false);
+        webViewSettings.setJavaScriptEnabled(true);
+    }
+
+    private void loadJsonEditor(Context context, String fileText, String lang) {
+        int height = (int) (binding.scrollView.getMeasuredHeight() / context.getResources().getDisplayMetrics().density * 0.95);
+        JsonEditorObject webObject;
+        if (editable) {
+            try {
+                JsonUtil.checkJson(fileText);
+                String jsonText = JsonUtil.toJson(JsonUtil.fromJson(fileText, Object.class));
+                webObject = new JsonEditorObject(jsonText, "tree", lang, true, height, this::configSave);
+                binding.editTextConfigWebview.addJavascriptInterface(webObject, "webObject");
+            } catch (Exception e) {
+                DialogUtils.showAlertDialog(getView(), R.string.error, e.getLocalizedMessage());
+                return;
+            }
+        } else {
+            webObject = new JsonEditorObject(fileText, "text-plain", lang, false, height
