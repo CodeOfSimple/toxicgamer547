@@ -84,3 +84,51 @@ public class ConfigEditFragment extends Fragment {
                         Intent intent = new Intent("android.intent.action.VIEW");
                         intent.addCategory("android.intent.category.DEFAULT");
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            CommonLogic.doOnNonNull(this.getContext(), (context -> {
+                                Uri contentUri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", file);
+                                intent.setDataAndType(contentUri, "text/plain");
+                            }));
+                        } else {
+                            intent.setDataAndType(Uri.fromFile(file), "text/plain");
+                        }
+                        this.startActivity(intent);
+                    }
+                    onConfigCancel();
+                }));
+            }
+        });
+    }
+
+    private void onScrollViewRendered(File file, Context context) {
+        String fileText = FileUtils.getFileText(file);
+        if (fileText != null) {
+            String lang = MultiLanguages.getAppLanguage().getLanguage();
+            switch (lang) {
+                case "zh":
+                    lang = "zh-CN";
+                    break;
+                case "fr":
+                    lang = "fr-FR";
+                    break;
+                case "pt":
+                    lang = "pt-BR";
+                    break;
+                default:
+                    break;
+            }
+            if (!virtualKeyboardConfigMode) {
+                loadJsonEditor(context, fileText, lang);
+            } else {
+                loadVirtualKeyboardEditor(context, fileText, lang);
+            }
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void initAssetWebView() {
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this.requireContext()))
+                .build();
+        binding.editTextConfigWebview.setWebViewClient(new WebViewClient()
