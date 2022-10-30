@@ -166,4 +166,46 @@ public class ConfigEditFragment extends Fragment {
                 return;
             }
         } else {
-            webObject = new JsonEditorObject(fileText, "text-plain", lang, false, height
+            webObject = new JsonEditorObject(fileText, "text-plain", lang, false, height, null);
+            binding.editTextConfigWebview.addJavascriptInterface(webObject, "webObject");
+        }
+        Activity activity = CommonLogic.getActivityFromView(binding.editTextConfigWebview);
+        if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
+        String targetUrl = "https://appassets.androidplatform.net/assets/jsoneditor/editor.html";
+        binding.editTextConfigWebview.loadUrl(targetUrl);
+    }
+
+    private void loadVirtualKeyboardEditor(Context context, String fileText, String lang) {
+        int height = context.getResources().getDisplayMetrics().heightPixels;
+        int width = context.getResources().getDisplayMetrics().widthPixels;
+        boolean landscape = true;
+        if (height > width) {
+            height ^= width; width ^= height; height ^= width;
+            landscape = false;
+        }
+        int widthDp = (int) (binding.scrollView.getMeasuredWidth() / context.getResources().getDisplayMetrics().density * 0.95);
+        float scale = widthDp / (float) width;
+        KeyboardEditorObject webObject = new KeyboardEditorObject(fileText, lang, height, width, scale, landscape, this::configSave);
+        binding.editTextConfigWebview.addJavascriptInterface(webObject, "webObject");
+        String targetUrl = "https://appassets.androidplatform.net/assets/vkconfig/index.html";
+        binding.editTextConfigWebview.loadUrl(targetUrl);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    private void onConfigSave() {
+        binding.editTextConfigWebview.loadUrl("javascript:getJson()");
+    }
+
+    private void configSave(String config) {
+        try {
+            JsonUtil.checkJson(config);
+            FileOutputStream outputStream = new FileOutputStream(configPath);
+            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream)) {
+          
