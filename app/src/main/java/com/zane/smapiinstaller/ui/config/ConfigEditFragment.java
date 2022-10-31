@@ -208,4 +208,20 @@ public class ConfigEditFragment extends Fragment {
             JsonUtil.checkJson(config);
             FileOutputStream outputStream = new FileOutputStream(configPath);
             try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream)) {
-          
+                outputStreamWriter.write(config);
+                outputStreamWriter.flush();
+            }
+        } catch (Exception e) {
+            DialogUtils.showAlertDialog(getView(), R.string.error, e.getLocalizedMessage());
+        }
+    }
+
+
+    private void onConfigCancel() {
+        CommonLogic.doOnNonNull(getView(), view -> Navigation.findNavController(view).popBackStack());
+    }
+
+    private void onLogParser() {
+        CommonLogic.doOnNonNull(getContext(), context -> CommonLogic.openUrl(context, "https://smapi.io/log"));
+    }
+}
