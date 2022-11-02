@@ -76,4 +76,37 @@ public class DownloadableContentAdapter extends RecyclerView.Adapter<Downloadabl
 
         public DownloadableContent downloadableContent;
 
-        public void setDownloadableContent(Downloadab
+        public void setDownloadableContent(DownloadableContent downloadableContent) {
+            this.downloadableContent = downloadableContent;
+            binding.textItemType.setText(downloadableContent.getType());
+            binding.textItemName.setText(downloadableContent.getName());
+            binding.textItemDescription.setText(downloadableContent.getDescription());
+            if (StringUtils.isNoneBlank(downloadableContent.getAssetPath())) {
+                File contentFile = new File(itemView.getContext().getFilesDir(), downloadableContent.getAssetPath());
+                if (contentFile.exists()) {
+                    Context context = itemView.getContext();
+                    File file = new File(context.getCacheDir(), downloadableContent.getName() + ".zip");
+                    if (!file.exists() || !StringUtils.equalsIgnoreCase(FileUtils.getFileHash(file), downloadableContent.getHash())) {
+                        binding.buttonRemoveContent.setVisibility(View.VISIBLE);
+                        binding.buttonDownloadContent.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                    binding.buttonRemoveContent.setVisibility(View.VISIBLE);
+                    binding.buttonDownloadContent.setVisibility(View.INVISIBLE);
+                    return;
+                }
+            }
+            binding.buttonRemoveContent.setVisibility(View.INVISIBLE);
+            binding.buttonDownloadContent.setVisibility(View.VISIBLE);
+        }
+
+        public ViewHolder(View view) {
+            super(view);
+            binding = DownloadContentItemBinding.bind(view);
+            binding.buttonRemoveContent.setOnClickListener(v -> removeContent());
+            binding.buttonDownloadContent.setOnClickListener(v -> downloadContent());
+        }
+
+        void removeContent() {
+            if (StringUtils.isNoneBlank(downloadableContent.getAssetPath())) {
+                File contentFile = new File(itemView.getContext().getFilesDir(), downloadableContent.ge
