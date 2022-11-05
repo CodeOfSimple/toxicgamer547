@@ -142,3 +142,41 @@ public class DownloadableContentAdapter extends RecyclerView.Adapter<Downloadabl
                     try {
                         FileUtils.forceDelete(file);
                     } catch (IOException e) {
+                        Crashes.trackError(e);
+                        return;
+                    }
+                } else {
+                    unpackLogic(context, file, modManifestEntry);
+                    return;
+                }
+            }
+            if (downloading.get()) {
+                return;
+            }
+            downloading.set(true);
+            ModManifestEntry finalModManifestEntry = modManifestEntry;
+            AtomicReference<ProgressDialog> dialogRef = DialogUtils.showProgressDialog(itemView, R.string.progress, "");
+            OkGo.<File>get(downloadableContent.getUrl()).execute(new FileCallback(file.getParentFile().getAbsolutePath(), file.getName()) {
+                @Override
+                public void onError(Response<File> response) {
+                    super.onError(response);
+                    DialogUtils.dismissDialog(itemView, dialogRef.get());
+                    downloading.set(false);
+                    DialogUtils.showAlertDialog(itemView, R.string.error, R.string.error_failed_to_download);
+                }
+
+                @Override
+                public void downloadProgress(Progress progress) {
+                    super.downloadProgress(progress);
+                    ProgressDialog dialog = dialogRef.get();
+                    if (dialog != null) {
+                        dialog.setMessage(context.getString(R.string.downloading, progress.currentSize / 1024, progress.totalSize / 1024));
+                        dialog.setProgress((int) (progress.currentSize * 100.0 / progress.totalSize));
+                    }
+                }
+
+                @Override
+                public void onSuccess(Response<File> response) {
+                    DialogUtils.dismissDialog(itemView, dialogRef.get());
+                    downloading.set(false);
+            
