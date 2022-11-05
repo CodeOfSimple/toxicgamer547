@@ -179,4 +179,32 @@ public class DownloadableContentAdapter extends RecyclerView.Adapter<Downloadabl
                 public void onSuccess(Response<File> response) {
                     DialogUtils.dismissDialog(itemView, dialogRef.get());
                     downloading.set(false);
-            
+                    File downloadedFile = response.body();
+                    String hash = com.zane.smapiinstaller.utils.FileUtils.getFileHash(downloadedFile);
+                    if (!StringUtils.equalsIgnoreCase(hash, downloadableContent.getHash())) {
+                        DialogUtils.showAlertDialog(itemView, R.string.error, R.string.error_failed_to_download);
+                        return;
+                    }
+                    unpackLogic(context, downloadedFile, finalModManifestEntry);
+                }
+            });
+        }
+
+        private void unpackLogic(Context context, File downloadedFile, ModManifestEntry finalModManifestEntry) {
+            try {
+                if (StringUtils.equals(downloadableContent.getType(), DownloadableContentTypeConstants.LOCALE)) {
+                    if (finalModManifestEntry != null) {
+                        ZipUtil.unpack(downloadedFile, new File(finalModManifestEntry.getAssetPath()));
+                    }
+                } else {
+                    ZipUtil.unpack(downloadedFile, new File(context.getFilesDir(), downloadableContent.getAssetPath()));
+                }
+                DialogUtils.showAlertDialog(itemView, R.string.info, R.string.download_unpack_success);
+                binding.buttonDownloadContent.setVisibility(View.INVISIBLE);
+                binding.buttonRemoveContent.setVisibility(View.VISIBLE);
+            } catch (Exception e) {
+                DialogUtils.showAlertDialog(itemView, R.string.error, e.getLocalizedMessage());
+            }
+        }
+    }
+}
