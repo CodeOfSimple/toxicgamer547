@@ -109,4 +109,36 @@ public class DownloadableContentAdapter extends RecyclerView.Adapter<Downloadabl
 
         void removeContent() {
             if (StringUtils.isNoneBlank(downloadableContent.getAssetPath())) {
-                File contentFile = new File(itemView.getContext().getFilesDir(), downloadableContent.ge
+                File contentFile = new File(itemView.getContext().getFilesDir(), downloadableContent.getAssetPath());
+                if (contentFile.exists()) {
+                    DialogUtils.showConfirmDialog(itemView, R.string.confirm, R.string.confirm_delete_content, (dialog, which) -> {
+                        if (which == DialogAction.POSITIVE) {
+                            try {
+                                FileUtils.forceDelete(contentFile);
+                                binding.buttonDownloadContent.setVisibility(View.VISIBLE);
+                                binding.buttonRemoveContent.setVisibility(View.INVISIBLE);
+                            } catch (IOException e) {
+                                DialogUtils.showAlertDialog(itemView, R.string.error, e.getLocalizedMessage());
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        void downloadContent() {
+            Context context = itemView.getContext();
+            ModManifestEntry modManifestEntry = null;
+            if (StringUtils.equals(downloadableContent.getType(), DownloadableContentTypeConstants.LOCALE)) {
+                modManifestEntry = ModAssetsManager.findFirstModIf(mod -> StringUtils.equals(mod.getUniqueID(), "ZaneYork.CustomLocalization") || StringUtils.equals(mod.getUniqueID(), "SMAPI.CustomLocalization"));
+                if (modManifestEntry == null) {
+                    DialogUtils.showAlertDialog(itemView, R.string.error, String.format(context.getString(R.string.error_depends_on_mod), context.getString(R.string.locale_pack), "ZaneYork.CustomLocalization"));
+                    return;
+                }
+            }
+            File file = new File(context.getCacheDir(), downloadableContent.getName() + ".zip");
+            if (file.exists()) {
+                if (!StringUtils.equalsIgnoreCase(FileUtils.getFileHash(file), downloadableContent.getHash())) {
+                    try {
+                        FileUtils.forceDelete(file);
+                    } catch (IOException e) {
