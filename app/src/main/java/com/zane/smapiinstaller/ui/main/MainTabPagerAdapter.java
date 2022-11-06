@@ -39,4 +39,37 @@ class MainTabPagerAdapter extends FragmentStateAdapter {
             case 3:
                 fragment = new HelpFragment();
                 fragment.setArguments(args);
-                retur
+                return fragment;
+            case 4:
+                fragment = new AboutFragment();
+                fragment.setArguments(args);
+                return fragment;
+            case 0:
+            default:
+                fragment = new InstallFragment();
+                fragment.setArguments(args);
+                return fragment;
+        }
+    }
+
+    public String getTitle(int position) {
+        switch (position){
+            case 1:
+                return fragment.getString(R.string.menu_config);
+            case 2:
+                return fragment.getString(R.string.menu_download);
+            case 3:
+                return fragment.getString(R.string.menu_help);
+            case 4:
+                return fragment.getString(R.string.menu_about);
+            case 0:
+            default:
+                return fragment.getString(R.string.menu_install);
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        return 5;
+    }
+}
