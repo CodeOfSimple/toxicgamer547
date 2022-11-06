@@ -32,4 +32,23 @@ public class MainTabsFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        super.onDe
+        super.onDestroyView();
+        binding = null;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        MainTabPagerAdapter pagerAdapter = new MainTabPagerAdapter(this);
+        binding.mainPager.setAdapter(pagerAdapter);
+        new TabLayoutMediator(binding.mainTabLayout, binding.mainPager,
+                (tab, position) -> tab.setText(pagerAdapter.getTitle(position))
+        ).attach();
+        binding.mainPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                MainActivity.instance.setFloatingBarVisibility(position < 3);
+            }
+        });
+    }
+}
