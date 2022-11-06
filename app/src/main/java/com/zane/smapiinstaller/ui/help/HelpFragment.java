@@ -53,3 +53,25 @@ public class HelpFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private void compat() {
+        CommonLogic.doOnNonNull(this.getContext(), context -> CommonLogic.openUrl(context, "https://smapi.io/mods"));
+    }
+
+    private void nexus() {
+        CommonLogic.doOnNonNull(this.getContext(), context -> CommonLogic.openUrl(context, "https://www.nexusmods.com/stardewvalley/mods/"));
+    }
+
+    private void showLog() {
+        CommonLogic.doOnNonNull(this.getView(), view -> {
+            NavController controller = Navigation.findNavController(view);
+            File logFile = new File(FileUtils.getStadewValleyBasePath(), Constants.LOG_PATH);
+            if (logFile.exists()) {
+                MobileNavigationDirections.ActionNavAnyToConfigEditFragment action = HelpFragmentDirections.actionNavAnyToConfigEditFragment(logFile.getAbsolutePath());
+                action.setEditable(false);
+                controller.navigate(action);
+            }
+        });
+    }
+}
