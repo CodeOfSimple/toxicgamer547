@@ -19,4 +19,13 @@ public class ConfigUtils {
             }
             else {
                 appConfig = new AppConfig(null, key, null);
-       
+            }
+        }
+        return appConfig;
+    }
+    public static void saveConfig(MainApplication application, AppConfig config){
+        DaoSession daoSession = application.getDaoSession();
+        AppConfigDao appConfigDao = daoSession.getAppConfigDao();
+        appConfigDao.insertOrReplace(config);
+    }
+}
