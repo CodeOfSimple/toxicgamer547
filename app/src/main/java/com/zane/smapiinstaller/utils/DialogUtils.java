@@ -49,4 +49,48 @@ public class DialogUtils {
                 dialog.setProgress(progress);
             }
             if (message != null) {
-                dialog.setMessage(ac
+                dialog.setMessage(activity.getString(message));
+            }
+        });
+    }
+
+    /**
+     * 显示警告对话框
+     *
+     * @param view    context容器
+     * @param title   标题
+     * @param message 消息
+     */
+    public static void showAlertDialog(View view, int title, String message) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(null, message, null).positiveButton(R.string.ok, null, null);
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+    public static void showAlertDialog(Activity context, int title, String message) {
+        CommonLogic.runOnUiThread(context, (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(null, message, null).positiveButton(R.string.ok, null, null);
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    /**
+     * 显示警告对话框
+     *
+     * @param view    context容器
+     * @param title   标题
+     * @param message 消息
+     */
+    public static void showAlertDialog(View view, int title, int message) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(message, null, null).positiveButton(R.string.ok, null, null);
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    public static void showAlertDialog(Activity context, int title, int message) {
+        CommonLogic.runOnUiThread(context, (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(message, null, null).positiveButton(R.string.ok, null, nu
