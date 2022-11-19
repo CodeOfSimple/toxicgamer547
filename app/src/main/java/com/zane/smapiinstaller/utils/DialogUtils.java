@@ -93,4 +93,57 @@ public class DialogUtils {
 
     public static void showAlertDialog(Activity context, int title, int message) {
         CommonLogic.runOnUiThread(context, (activity) -> {
-            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(message, null, null).positiveButton(R.string.ok, null, nu
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(message, null, null).positiveButton(R.string.ok, null, null);
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    /**
+     * 显示确认对话框
+     *
+     * @param view     context容器
+     * @param title    标题
+     * @param message  消息
+     * @param callback 回调
+     */
+    public static void showConfirmDialog(View view, int title, int message, BiConsumer<MaterialDialog, DialogAction> callback) {
+        showConfirmDialog(CommonLogic.getActivityFromView(view), title, message, callback);
+    }
+    public static void showConfirmDialog(Activity context, int title, int message, BiConsumer<MaterialDialog, DialogAction> callback) {
+        CommonLogic.runOnUiThread(context, (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(message, null, null).positiveButton(R.string.confirm, null, dialog -> {
+                callback.accept(dialog, DialogAction.POSITIVE);
+                return null;
+            }).negativeButton(R.string.cancel, null, dialog -> {
+                callback.accept(dialog, DialogAction.NEGATIVE);
+                return null;
+            });
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    /**
+     * 显示确认对话框
+     *
+     * @param view     context容器
+     * @param title    标题
+     * @param message  消息
+     * @param callback 回调
+     */
+    public static void showConfirmDialog(View view, int title, String message, BiConsumer<MaterialDialog, DialogAction> callback) {
+        showConfirmDialog(view, title, message, R.string.confirm, R.string.cancel, callback);
+    }
+
+    /**
+     * 显示确认对话框
+     *
+     * @param view         context容器
+     * @param title        标题
+     * @param message      消息
+     * @param positiveText 确认文本
+     * @param negativeText 取消文本
+     * @param callback     回调
+     */
+    public static void showConfirmDialog(View view, int title, St
