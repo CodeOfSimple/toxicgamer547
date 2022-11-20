@@ -146,4 +146,46 @@ public class DialogUtils {
      * @param negativeText 取消文本
      * @param callback     回调
      */
-    public static void showConfirmDialog(View view, int title, St
+    public static void showConfirmDialog(View view, int title, String message, int positiveText, int negativeText, BiConsumer<MaterialDialog, DialogAction> callback) {
+        showConfirmDialog(view, title, message, positiveText, negativeText, false, callback);
+    }
+
+    public static void showConfirmDialog(View view, int title, String message, int positiveText, int negativeText, boolean isHtml, BiConsumer<MaterialDialog, DialogAction> callback) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR())
+                    .title(title, null)
+                    .positiveButton(positiveText, null, dialog -> {
+                        callback.accept(dialog, DialogAction.POSITIVE);
+                        return null;
+                    }).negativeButton(negativeText, null, dialog -> {
+                        callback.accept(dialog, DialogAction.NEGATIVE);
+                        return null;
+                    });
+            if(isHtml){
+                materialDialog.message(null, message, (dialogMessageSettings) -> {
+                    dialogMessageSettings.html(null);
+                    return null;
+                });
+            }
+            else {
+                materialDialog.message(null, message, null);
+            }
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    /**
+     * 显示进度条
+     *
+     * @param view    context容器
+     * @param title   标题
+     * @param message 消息
+     * @return 对话框引用
+     */
+    public static AtomicReference<ProgressDialog> showProgressDialog(View view, int title, String message) {
+        AtomicReference<ProgressDialog> reference = new AtomicReference<>();
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            ProgressDialog dialog = new ProgressDialog(activity);
+            DialogUtils.setCurrentDialog(dialog);
+      
