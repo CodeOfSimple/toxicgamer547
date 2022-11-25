@@ -188,4 +188,60 @@ public class DialogUtils {
         CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
             ProgressDialog dialog = new ProgressDialog(activity);
             DialogUtils.setCurrentDialog(dialog);
-      
+            dialog.setMessage(message);
+            dialog.setCancelable(false);
+            dialog.setMax(100);
+            dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            dialog.show();
+            reference.set(dialog);
+        });
+        return reference;
+    }
+    public static AtomicReference<ProgressDialog> showProgressDialog(Activity context, int title, String message) {
+        AtomicReference<ProgressDialog> reference = new AtomicReference<>();
+        CommonLogic.runOnUiThread(context, (activity) -> {
+            ProgressDialog dialog = new ProgressDialog(activity);
+            DialogUtils.setCurrentDialog(dialog);
+            dialog.setMessage(message);
+            dialog.setCancelable(false);
+            dialog.setMax(100);
+            dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            dialog.show();
+            reference.set(dialog);
+        });
+        return reference;
+    }
+
+    /**
+     * 解散指定对话框
+     *
+     * @param view   view
+     * @param dialog 对话框
+     */
+    public static void dismissDialog(View view, MaterialDialog dialog) {
+        Activity activity = CommonLogic.getActivityFromView(view);
+        if (activity != null && !activity.isFinishing()) {
+            activity.runOnUiThread(() -> {
+                if (dialog != null && dialog.isShowing()) {
+                    try {
+                        dialog.dismiss();
+                    } catch (Exception e) {
+                        Crashes.trackError(e);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 解散指定对话框
+     *
+     * @param view   view
+     * @param dialog 对话框
+     */
+    public static void dismissDialog(View view, ProgressDialog dialog) {
+        Activity activity = CommonLogic.getActivityFromView(view);
+        if (activity != null && !activity.isFinishing()) {
+            activity.runOnUiThread(() -> {
+                if (dialog != null) {
+                    t
