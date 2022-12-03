@@ -244,4 +244,63 @@ public class DialogUtils {
         if (activity != null && !activity.isFinishing()) {
             activity.runOnUiThread(() -> {
                 if (dialog != null) {
-                    t
+                    try {
+                        dialog.dismiss();
+                    } catch (Exception e) {
+                        Crashes.trackError(e);
+                    }
+                }
+            });
+        }
+    }
+
+    public static void dismissDialog(Activity activity, ProgressDialog dialog) {
+        if (activity != null && !activity.isFinishing()) {
+            activity.runOnUiThread(() -> {
+                if (dialog != null) {
+                    try {
+                        dialog.dismiss();
+                    } catch (Exception e) {
+                        Crashes.trackError(e);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 解散当前对话框
+     */
+    public static void dismissDialog() {
+        try {
+            if (currentDialog != null) {
+                if (currentDialog instanceof MaterialDialog) {
+                    MaterialDialog dialog = (MaterialDialog) currentDialog;
+                    if (dialog.isShowing()) {
+                        dialog.dismiss();
+                    }
+                } else if (currentDialog instanceof ProgressDialog) {
+                    ProgressDialog dialog = (ProgressDialog) currentDialog;
+                    dialog.dismiss();
+                }
+            }
+        } catch (Exception e) {
+            Crashes.trackError(e);
+        }
+    }
+
+    /**
+     * 显示输入框
+     *
+     * @param view     context容器
+     * @param title    标题
+     * @param content  内容
+     * @param hint     提示
+     * @param prefill  预输入
+     * @param callback 回调
+     */
+    public static void showInputDialog(View view, int title, int content, String hint, String prefill, BiConsumer<MaterialDialog, CharSequence> callback) {
+        showInputDialog(view, title, content, hint, prefill, false, callback);
+    }
+
+    public static void showInputDialog(View view, int title, int content, String hint, String prefill, boolean allowEmpty, BiConsumer<MaterialDialog, CharSequenc
