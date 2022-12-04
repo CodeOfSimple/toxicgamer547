@@ -348,4 +348,25 @@ public class DialogUtils {
      */
     public static void showListItemsDialog(View view, int title, int items, BiConsumer<MaterialDialog, Integer> callback) {
         CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
-     
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null);
+            materialDialog = DialogListExtKt.listItems(materialDialog, items, null, null, false, (dialog, position, text) -> {
+                callback.accept(dialog, position);
+                return null;
+            });
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    public static void showListItemsDialog(View view, int title, List<String> items, BiConsumer<MaterialDialog, Integer> callback) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null);
+            materialDialog = DialogListExtKt.listItems(materialDialog, null, items, null, false, (dialog, position, text) -> {
+                callback.accept(dialog, position);
+                return null;
+            });
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+}
