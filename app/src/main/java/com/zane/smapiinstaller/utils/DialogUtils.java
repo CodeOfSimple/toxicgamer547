@@ -303,4 +303,49 @@ public class DialogUtils {
         showInputDialog(view, title, content, hint, prefill, false, callback);
     }
 
-    public static void showInputDialog(View view, int title, int content, String hint, String prefill, boolean allowEmpty, BiConsumer<MaterialDialog, CharSequenc
+    public static void showInputDialog(View view, int title, int content, String hint, String prefill, boolean allowEmpty, BiConsumer<MaterialDialog, CharSequence> callback) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog dialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null).message(content, null, null);
+            dialog = DialogInputExtKt.input(dialog, hint, null, prefill, null,
+                    InputType.TYPE_CLASS_TEXT,
+                    null, true, allowEmpty, (materialDialog, text) -> {
+                        callback.accept(materialDialog, text);
+                        return null;
+                    });
+            DialogUtils.setCurrentDialog(dialog);
+            dialog.show();
+        });
+    }
+
+    /**
+     * 显示列表单选框
+     *
+     * @param view     context容器
+     * @param title    标题
+     * @param items    列表
+     * @param index    默认选择
+     * @param callback 回调
+     */
+    public static void showSingleChoiceDialog(View view, int title, int items, int index, BiConsumer<MaterialDialog, Integer> callback) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+            MaterialDialog materialDialog = new MaterialDialog(activity, MaterialDialog.getDEFAULT_BEHAVIOR()).title(title, null);
+            materialDialog = DialogSingleChoiceExtKt.listItemsSingleChoice(materialDialog, items, null, null, index, false, -1, -1, (dialog, position, text) -> {
+                callback.accept(dialog, position);
+                return null;
+            });
+            DialogUtils.setCurrentDialog(materialDialog);
+            materialDialog.show();
+        });
+    }
+
+    /**
+     * 显示列表选择框
+     *
+     * @param view     context容器
+     * @param title    标题
+     * @param items    列表
+     * @param callback 回调
+     */
+    public static void showListItemsDialog(View view, int title, int items, BiConsumer<MaterialDialog, Integer> callback) {
+        CommonLogic.runOnUiThread(CommonLogic.getActivityFromView(view), (activity) -> {
+     
