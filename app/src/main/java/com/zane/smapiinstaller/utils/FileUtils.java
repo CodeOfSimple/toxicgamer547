@@ -84,4 +84,62 @@ public class FileUtils extends org.zeroturnaround.zip.commons.FileUtils {
             }
             return context.getAssets().open(localedFilename);
         } catch (IOException e) {
-            Log.d("LOCALE", "No lo
+            Log.d("LOCALE", "No locale asset found", e);
+        }
+        return getLocalAsset(context, filename);
+    }
+
+    /**
+     * 读取JSON文件
+     *
+     * @param file 文件
+     * @param type 数据类型
+     * @param <T>  泛型类型
+     * @return 数据
+     */
+    public static <T> T getFileJson(File file, TypeReference<T> type) {
+        try {
+            InputStream inputStream = new FileInputStream(file);
+            try (InputStreamReader reader = new InputStreamReader(new BOMInputStream(inputStream), StandardCharsets.UTF_8)) {
+                return JsonUtil.fromJson(CharStreams.toString(reader), type);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 读取JSON文件
+     *
+     * @param file   文件
+     * @param tClass 数据类型
+     * @param <T>    泛型类型
+     * @return 数据
+     */
+    public static <T> T getFileJson(File file, Class<T> tClass) {
+        try {
+            InputStream inputStream = new FileInputStream(file);
+            try (InputStreamReader reader = new InputStreamReader(new BOMInputStream(inputStream), StandardCharsets.UTF_8)) {
+                return JsonUtil.fromJson(CharStreams.toString(reader), tClass);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 写入JSON文件到本地
+     *
+     * @param context  context
+     * @param filename 文件名
+     * @param content  内容
+     */
+    public static void writeAssetJson(Context context, String filename, Object content) {
+        try {
+            String tmpFilename = filename + ".tmp";
+            File file = new File(context.getFilesDir(), tmpFilename);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            try (OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+                writer.write(JsonUtil.toJson(content));
+            } finally {
+                File distFile = new File(context.getFile
