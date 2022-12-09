@@ -142,4 +142,61 @@ public class FileUtils extends org.zeroturnaround.zip.commons.FileUtils {
             try (OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
                 writer.write(JsonUtil.toJson(content));
             } finally {
-                File distFile = new File(context.getFile
+                File distFile = new File(context.getFilesDir(), filename);
+                if (distFile.exists()) {
+                    org.zeroturnaround.zip.commons.FileUtils.forceDelete(distFile);
+                }
+                org.zeroturnaround.zip.commons.FileUtils.moveFile(file, distFile);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * 写入JSON文件到本地
+     *
+     * @param file    文件
+     * @param content 内容
+     */
+    public static void writeFileJson(File file, Object content) {
+        try {
+            if (!file.getParentFile().exists()) {
+                org.zeroturnaround.zip.commons.FileUtils.forceMkdir(file.getParentFile());
+            }
+            String filename = file.getName();
+            String tmpFilename = filename + ".tmp";
+            File fileTmp = new File(file.getParent(), tmpFilename);
+            FileOutputStream outputStream = new FileOutputStream(fileTmp);
+            try (OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+                writer.write(JsonUtil.toJson(content));
+            } finally {
+                if (file.exists()) {
+                    org.zeroturnaround.zip.commons.FileUtils.forceDelete(file);
+                }
+                org.zeroturnaround.zip.commons.FileUtils.moveFile(fileTmp, file);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * 读取资源文本
+     *
+     * @param context  context
+     * @param filename 文件名
+     * @return 文本
+     */
+    public static String getAssetText(Context context, String filename) {
+        try {
+            InputStream inputStream = getLocalAsset(context, filename);
+            try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                return CharStreams.toString(reader);
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 读取本地化后的资源文本
+   
