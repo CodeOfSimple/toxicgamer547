@@ -199,4 +199,70 @@ public class FileUtils extends org.zeroturnaround.zip.commons.FileUtils {
 
     /**
      * 读取本地化后的资源文本
-   
+     *
+     * @param context  context
+     * @param filename 文件名
+     * @return 文本
+     */
+    public static String getLocaledAssetText(Context context, String filename) {
+        try {
+            InputStream inputStream = getLocaledLocalAsset(context, filename);
+            try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                return CharStreams.toString(reader);
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 读取JSON资源
+     *
+     * @param context  context
+     * @param filename 资源名
+     * @param tClass   数据类型
+     * @param <T>      泛型类型
+     * @return 数据
+     */
+    public static <T> T getAssetJson(Context context, String filename, Class<T> tClass) {
+        String text = getAssetText(context, filename);
+        if (text != null) {
+            return JsonUtil.fromJson(text, tClass);
+        }
+        return null;
+    }
+
+    public static <T> T getLocaledAssetJson(Context context, String filename, Class<T> tClass) {
+        try {
+            InputStream inputStream = getLocaledLocalAsset(context, filename);
+            try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                return JsonUtil.fromJson(CharStreams.toString(reader), tClass);
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 读取JSON资源
+     *
+     * @param context  context
+     * @param filename 资源名
+     * @param type     数据类型
+     * @param <T>      泛型类型
+     * @return 数据
+     */
+    public static <T> T getAssetJson(Context context, String filename, TypeReference<T> type) {
+        String text = getAssetText(context, filename);
+        if (text != null) {
+            return JsonUtil.fromJson(text, type);
+        }
+        return null;
+    }
+
+    /**
+     * 读取资源为字节数组
+     *
+     * @param context  context
+     * @param filename 文件名
+     
