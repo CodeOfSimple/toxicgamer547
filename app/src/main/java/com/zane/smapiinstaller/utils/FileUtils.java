@@ -265,4 +265,63 @@ public class FileUtils extends org.zeroturnaround.zip.commons.FileUtils {
      *
      * @param context  context
      * @param filename 文件名
-     
+     * @return 字节数组
+     */
+    public static byte[] getAssetBytes(Context context, String filename) {
+        try {
+            try (InputStream inputStream = getLocalAsset(context, filename)) {
+                return ByteStreams.toByteArray(inputStream);
+            }
+        } catch (IOException ignored) {
+        }
+        return new byte[0];
+    }
+
+    /**
+     * 简化路径前缀
+     *
+     * @param path 文件路径
+     * @return 移除前缀后的路径
+     */
+    public static String toPrettyPath(String path) {
+        return StringUtils.removeStart(path, FileUtils.getStadewValleyBasePath());
+    }
+
+    /**
+     * 计算资源文件SHA3-256
+     *
+     * @param context  context
+     * @param filename 资源名
+     * @return SHA3-256值
+     */
+    public static String getFileHash(Context context, String filename) {
+        try (InputStream inputStream = getLocalAsset(context, filename)) {
+            return Hashing.sha256().hashBytes(ByteStreams.toByteArray(inputStream)).toString();
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 计算文件SHA3-256
+     *
+     * @param file 文件
+     * @return SHA3-256值
+     */
+    public static String getFileHash(File file) {
+        try (InputStream inputStream = new FileInputStream(file)) {
+            return Hashing.sha256().hashBytes(ByteStreams.toByteArray(inputStream)).toString();
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    public static String getStadewValleyBasePath() {
+        return Environment.getExternalStorageDirectory().getAbsolutePath();
+    }
+
+    public static List<String> listAll(String basePath, Predicate<File> filter) {
+        return Lists.newArrayList(
+                Iterables.transform(
+                        Iterables.filter(Files.fileTraverser().breadthFirst(new File(basePath)), filter::test),
+                    
