@@ -324,4 +324,7 @@ public class FileUtils extends org.zeroturnaround.zip.commons.FileUtils {
         return Lists.newArrayList(
                 Iterables.transform(
                         Iterables.filter(Files.fileTraverser().breadthFirst(new File(basePath)), filter::test),
-                    
+                        File::getAbsolutePath)
+        );
+    }
+}
