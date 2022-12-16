@@ -33,4 +33,60 @@ public class VersionUtil {
                 return Integer.compare(intA, Integer.parseInt(listB.get(i)));
             } catch (Exception ignored) {
                 try {
-                
+                    intB = Integer.parseInt(listB.get(i));
+                } catch (Exception ignored2) {
+                }
+            }
+            if(StringUtils.equals(listA.get(i), listB.get(i))) {
+                continue;
+            }
+            if(intA != null && intB == null) {
+                return 1;
+            } else if(intA == null) {
+                return -1;
+            }
+            return listA.get(i).compareTo(listB.get(i));
+        }
+        return Integer.compare(listA.size(), listB.size());
+    }
+
+    /**
+     * 判断是否为空版本段
+     * @param versionSections 版本段列表
+     * @return 是否为空版本段
+     */
+    private static boolean isZero(List<String> versionSections) {
+        return versionSections.stream().noneMatch(version -> {
+            try {
+                int i = Integer.parseInt(version);
+                if (i == 0) {
+                    return false;
+                }
+            } catch (Exception ignored) {
+            }
+            return true;
+        });
+    }
+
+    /**
+     * 比较两个版本
+     * @param versionA versionA
+     * @param versionB versionB
+     * @return 比较结果
+     */
+    public static int compareVersion(String versionA, String versionB) {
+        List<String> versionSectionsA = Splitter.on(".").splitToList(versionA);
+        List<String> versionSectionsB = Splitter.on(".").splitToList(versionB);
+        for (int i = 0; i < versionSectionsA.size(); i++) {
+            if (versionSectionsB.size() <= i) {
+                if(isZero(versionSectionsA.subList(i, versionSectionsA.size()))) {
+                    return 0;
+                }
+                return 1;
+            }
+            int compare = compareVersionSection(versionSectionsA.get(i), versionSectionsB.get(i));
+            if(compare != 0) {
+                return compare;
+            }
+        }
+        if(versionSectionsA.size() < versionSectionsB.si
