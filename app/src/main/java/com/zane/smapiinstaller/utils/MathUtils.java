@@ -60,4 +60,10 @@ public class MathUtils {
      * @since  1.8
      */
     public static long longValueExact(BigInteger value) {
-        if (value.bitLen
+        if (value.bitLength() <= LONG_MAX_BIT_VALUE) {
+            return value.longValue();
+        } else {
+            throw new ArithmeticException("BigInteger out of long range");
+        }
+    }
+}
