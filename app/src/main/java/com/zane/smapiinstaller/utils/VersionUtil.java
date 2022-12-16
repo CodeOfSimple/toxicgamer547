@@ -89,4 +89,12 @@ public class VersionUtil {
                 return compare;
             }
         }
-        if(versionSectionsA.size() < versionSectionsB.si
+        if(versionSectionsA.size() < versionSectionsB.size()) {
+            if(isZero(versionSectionsB.subList(versionSectionsA.size(), versionSectionsB.size()))) {
+                return 0;
+            }
+            return -1;
+        }
+        return 0;
+    }
+}
