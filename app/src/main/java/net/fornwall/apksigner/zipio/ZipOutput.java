@@ -7,4 +7,79 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.fornwall.apksigner.zipio;
+
+import com.google.common.io.ByteStreams;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+public final class ZipOutput implements AutoCloseable {
+
+	final OutputStream out;
+	int filePointer = 0;
+	final List<ZioEntry> entriesWritten = new LinkedList<>();
+	final Set<String> namesWritten = new HashSet<>();
+
+	public ZipOutput(OutputStream out) {
+		this.out = out;
+	}
+
+	public void write(ZioEntry entry) throws IOException {
+		String entryName = entry.getName();
+		if (namesWritten.contains(entryName)) {
+			System.err.println("Skipping duplicate file in output: " + entryName);
+			return;
+		}
+		entry.writeLocalEntry(this);
+		entriesWritten.add(entry);
+		namesWritten.add(entryName);
+	}
+
+	public int getFilePointer() {
+		return filePointer;
+	}
+
+	public void writeInt(int value) throws IOException {
+		byte[] data = new byte[4];
+		for (int i = 0; i < 4; i++) {
+			data[i] = (byte) (value & 0xFF);
+			value = value >> 8;
+		}
+		out.write(data);
+		filePointer += 4;
+	}
+
+	public void writeShort(short value) throws IOException {
+		byte[] data = new byte[2];
+		for (int i = 0; i < 2; i++) {
+			data[i] = (byte) (value & 0xFF);
+			value = (short) (value >> 8);
+		}
+		out.write(data);
+		filePointer += 2;
+	}
+
+	public void writeString(String value) throws IOException {
+		byte[] data = value.getBytes();
+		out.write(data);
+		filePointer += data.length;
+	}
+
+	public void writeBytes(byte[] value) throws IOException {
+		out.write(value);
+		filePointer += value.length;
+	}
+
+	public void pipeStream(InputStream inputStre
