@@ -82,4 +82,35 @@ public final class ZipOutput implements AutoCloseable {
 		filePointer += value.length;
 	}
 
-	public void pipeStream(InputStream inputStre
+	public void pipeStream(InputStream inputStream) throws IOException {
+		long length = ByteStreams.copy(inputStream, out);
+		filePointer += length;
+	}
+
+	public void writeBytes(byte[] value, int offset, int length) throws IOException {
+		out.write(value, offset, length);
+		filePointer += length;
+	}
+
+	@Override
+	public void close() throws IOException {
+		CentralEnd centralEnd = new CentralEnd();
+		centralEnd.centralStartOffset = getFilePointer();
+		centralEnd.numCentralEntries = centralEnd.totalCentralEntries = (short) entriesWritten.size();
+
+		for (ZioEntry entry : entriesWritten)
+			entry.write(this);
+
+		centralEnd.centralDirectorySize = (getFilePointer() - centralEnd.centralStartOffset);
+		centralEnd.fileComment = "";
+
+		centralEnd.write(this);
+
+		if (out != null)
+			try {
+				out.close();
+			} catch (Throwable t) {
+			}
+	}
+
+}
