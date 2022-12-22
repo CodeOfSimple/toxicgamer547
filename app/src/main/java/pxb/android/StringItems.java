@@ -57,4 +57,82 @@ public class StringItems extends ArrayList<StringItem> {
             } else {
                 int length = u16length(in);
                 s = new String(in.array(), in.position(), length * 2, "UTF-16LE");
-  
+            }
+            strings[i] = s;
+        }
+        return strings;
+    }
+
+	static int u16length(ByteBuffer in) {
+		int length = in.getShort() & 0xFFFF;
+		if (length > 0x7FFF) {
+			length = ((length & 0x7FFF) << 8) | (in.getShort() & 0xFFFF);
+		}
+		return length;
+	}
+
+	static int u8length(ByteBuffer in) {
+		int len = in.get() & 0xFF;
+		if ((len & 0x80) != 0) {
+			len = ((len & 0x7F) << 8) | (in.get() & 0xFF);
+		}
+		return len;
+	}
+
+	byte[] stringData;
+
+	public int getSize() {
+		return 5 * 4 + this.size() * 4 + stringData.length + 0;// TODO
+	}
+
+	public void prepare() throws IOException {
+		for (StringItem s : this) {
+			if (s.data.length() > 0x7FFF) {
+				useUTF8 = false;
+			}
+		}
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		int i = 0;
+		int offset = 0;
+		baos.reset();
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		for (StringItem item : this) {
+			item.index = i++;
+			String stringData = item.data;
+			Integer of = map.get(stringData);
+			if (of != null) {
+				item.dataOffset = of;
+			} else {
+				item.dataOffset = offset;
+				map.put(stringData, offset);
+				if (useUTF8) {
+					int length = stringData.length();
+					byte[] data = stringData.getBytes("UTF-8");
+					int u8lenght = data.length;
+
+					if (length > 0x7F) {
+						offset++;
+						baos.write((length >> 8) | 0x80);
+					}
+					baos.write(length);
+
+					if (u8lenght > 0x7F) {
+						offset++;
+						baos.write((u8lenght >> 8) | 0x80);
+					}
+					baos.write(u8lenght);
+					baos.write(data);
+					baos.write(0);
+					offset += 3 + u8lenght;
+				} else {
+					int length = stringData.length();
+					byte[] data = stringData.getBytes("UTF-16LE");
+					if (length > 0x7FFF) {
+						int x = (length >> 16) | 0x8000;
+						baos.write(x);
+						baos.write(x >> 8);
+						offset += 2;
+					}
+					baos.write(length);
+					baos.write(length >> 8);
+					baos.write(data)
