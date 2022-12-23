@@ -44,4 +44,85 @@ public class AxmlParser implements ResConst {
     // private int attrNs[];
     // private int attrResId[];
     // private int attrType[];
-  
+    // private Object attrValue[];
+
+    private int attributeCount;
+
+    private IntBuffer attrs;
+
+    private int classAttribute;
+    private int fileSize = -1;
+    private int idAttribute;
+    private ByteBuffer in;
+    private int lineNumber;
+    private int nameIdx;
+    private int nsIdx;
+
+    private int prefixIdx;
+
+    private int[] resourceIds;
+
+    private String[] strings;
+
+    private int styleAttribute;
+
+    private int textIdx;
+
+    public AxmlParser(byte[] data) {
+        this(ByteBuffer.wrap(data));
+    }
+
+    public AxmlParser(ByteBuffer in) {
+        super();
+        this.in = in.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    public int getAttrCount() {
+        return attributeCount;
+    }
+
+    public int getAttributeCount() {
+        return attributeCount;
+    }
+
+    public String getAttrName(int i) {
+        int idx = attrs.get(i * 5 + 1);
+        return strings[idx];
+
+    }
+
+    public String getAttrNs(int i) {
+        int idx = attrs.get(i * 5 + 0);
+        return idx >= 0 ? strings[idx] : null;
+    }
+
+    String getAttrRawString(int i) {
+        int idx = attrs.get(i * 5 + 2);
+        if (idx >= 0) {
+            return strings[idx];
+        }
+        return null;
+    }
+
+    public int getAttrResId(int i) {
+        if (resourceIds != null) {
+            int idx = attrs.get(i * 5 + 1);
+            if (idx >= 0 && idx < resourceIds.length) {
+                return resourceIds[idx];
+            }
+        }
+        return -1;
+    }
+
+    public int getAttrType(int i) {
+        return attrs.get(i * 5 + 3) >> 24;
+    }
+
+    public Object getAttrValue(int i) {
+        int v = attrs.get(i * 5 + 4);
+
+        if (i == idAttribute) {
+            return ValueWrapper.wrapId(v, getAttrRawString(i));
+        } else if (i == styleAttribute) {
+            return ValueWrapper.wrapStyle(v, getAttrRawString(i));
+        } else i
