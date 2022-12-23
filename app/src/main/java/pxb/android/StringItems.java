@@ -135,4 +135,29 @@ public class StringItems extends ArrayList<StringItem> {
 					}
 					baos.write(length);
 					baos.write(length >> 8);
-					baos.write(data)
+					baos.write(data);
+					baos.write(0);
+					baos.write(0);
+					offset += 4 + data.length;
+				}
+			}
+		}
+		// TODO
+		stringData = baos.toByteArray();
+	}
+
+	private boolean useUTF8 = true;
+
+	public void write(ByteBuffer out) throws IOException {
+		out.putInt(this.size());
+		out.putInt(0);// TODO style count
+		out.putInt(useUTF8 ? UTF8_FLAG : 0);
+		out.putInt(7 * 4 + this.size() * 4);
+		out.putInt(0);
+		for (StringItem item : this) {
+			out.putInt(item.dataOffset);
+		}
+		out.put(stringData);
+		// TODO
+	}
+}
