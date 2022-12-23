@@ -116,3 +116,27 @@ public class Axml extends AxmlVisitor {
     public void accept(final AxmlVisitor visitor) {
         for (Ns ns : nses) {
             ns.accept(visitor);
+        }
+        for (Node first : firsts) {
+            first.accept(visitor);
+        }
+    }
+
+    @Override
+    public NodeVisitor child(String ns, String name) {
+        Node node = new Node();
+        node.name = name;
+        node.ns = ns;
+        firsts.add(node);
+        return node;
+    }
+
+    @Override
+    public void ns(String prefix, String uri, int ln) {
+        Ns ns = new Ns();
+        ns.prefix = prefix;
+        ns.uri = uri;
+        ns.ln = ln;
+        nses.add(ns);
+    }
+}
