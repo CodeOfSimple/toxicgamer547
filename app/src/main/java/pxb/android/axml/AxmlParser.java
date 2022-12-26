@@ -125,4 +125,71 @@ public class AxmlParser implements ResConst {
             return ValueWrapper.wrapId(v, getAttrRawString(i));
         } else if (i == styleAttribute) {
             return ValueWrapper.wrapStyle(v, getAttrRawString(i));
-        } else i
+        } else if (i == classAttribute) {
+            return ValueWrapper.wrapClass(v, getAttrRawString(i));
+        }
+
+        switch (getAttrType(i)) {
+        case TYPE_STRING:
+            return strings[v];
+        case TYPE_INT_BOOLEAN:
+            return v != 0;
+        default:
+            return v;
+        }
+    }
+
+    public int getLineNumber() {
+        return lineNumber;
+    }
+
+    public String getName() {
+        return strings[nameIdx];
+    }
+
+    public String getNamespacePrefix() {
+        return strings[prefixIdx];
+    }
+
+    public String getNamespaceUri() {
+        return nsIdx >= 0 ? strings[nsIdx] : null;
+    }
+
+    public String getText() {
+        return strings[textIdx];
+    }
+
+    public int next() throws IOException {
+        if (fileSize < 0) {
+            int type = in.getInt() & 0xFFFF;
+            if (type != RES_XML_TYPE) {
+                throw new RuntimeException();
+            }
+            fileSize = in.getInt();
+            return START_FILE;
+        }
+        int event = -1;
+        for (int p = in.position(); p < fileSize; p = in.position()) {
+            int type = in.getInt() & 0xFFFF;
+            int size = in.getInt();
+            switch (type) {
+            case RES_XML_START_ELEMENT_TYPE: {
+                {
+                    lineNumber = in.getInt();
+                    in.getInt();/* skip, 0xFFFFFFFF */
+                    nsIdx = in.getInt();
+                    nameIdx = in.getInt();
+                    int flag = in.getInt();// 0x00140014 ?
+                    if (flag != 0x00140014) {
+                        throw new RuntimeException();
+                    }
+                }
+
+                attributeCount = in.getShort() & 0xFFFF;
+                idAttribute = (in.getShort() & 0xFFFF) - 1;
+                classAttribute = (in.getShort() & 0xFFFF) - 1;
+                styleAttribute = (in.getShort() & 0xFFFF) - 1;
+
+                attrs = in.asIntBuffer();
+
+                // attrResId = n
