@@ -192,4 +192,53 @@ public class AxmlParser implements ResConst {
 
                 attrs = in.asIntBuffer();
 
-                // attrResId = n
+                // attrResId = new int[attributeCount];
+                // attrName = new int[attributeCount];
+                // attrNs = new int[attributeCount];
+                // attrType = new int[attributeCount];
+                // attrValue = new Object[attributeCount];
+                // for (int i = 0; i < attributeCount; i++) {
+                // int attrNsIdx = in.getInt();
+                // int attrNameIdx = in.getInt();
+                // int raw = in.getInt();
+                // int aValueType = in.getInt() >>> 24;
+                // int aValue = in.getInt();
+                // Object value = null;
+                // switch (aValueType) {
+                // case TYPE_STRING:
+                // value = strings[aValue];
+                // break;
+                // case TYPE_INT_BOOLEAN:
+                // value = aValue != 0;
+                // break;
+                // default:
+                // value = aValue;
+                // }
+                // int resourceId = attrNameIdx < this.resourceIds.length ?
+                // resourceIds[attrNameIdx] : -1;
+                // attrNs[i] = attrNsIdx;
+                // attrName[i] = attrNameIdx;
+                // attrType[i] = aValueType;
+                // attrResId[i] = resourceId;
+                // attrValue[i] = value;
+                // }
+                event = START_TAG;
+            }
+                break;
+            case RES_XML_END_ELEMENT_TYPE: {
+                in.position(p + size);
+                event = END_TAG;
+            }
+                break;
+            case RES_XML_START_NAMESPACE_TYPE:
+                lineNumber = in.getInt();
+                in.getInt();/* 0xFFFFFFFF */
+                prefixIdx = in.getInt();
+                nsIdx = in.getInt();
+                event = START_NS;
+                break;
+            case RES_XML_END_NAMESPACE_TYPE:
+                in.position(p + size);
+                event = END_NS;
+                break;
+            case R
