@@ -241,4 +241,34 @@ public class AxmlParser implements ResConst {
                 in.position(p + size);
                 event = END_NS;
                 break;
-            case R
+            case RES_STRING_POOL_TYPE:
+                strings = StringItems.read(in);
+                in.position(p + size);
+                continue;
+            case RES_XML_RESOURCE_MAP_TYPE:
+                int count = size / 4 - 2;
+                resourceIds = new int[count];
+                for (int i = 0; i < count; i++) {
+                    resourceIds[i] = in.getInt();
+                }
+                in.position(p + size);
+                continue;
+            case RES_XML_CDATA_TYPE:
+                lineNumber = in.getInt();
+                in.getInt();/* 0xFFFFFFFF */
+                textIdx = in.getInt();
+
+                in.getInt();/* 00000008 00000000 */
+                in.getInt();
+
+                event = TEXT;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+            in.position(p + size);
+            return event;
+        }
+        return END_FILE;
+    }
+}
