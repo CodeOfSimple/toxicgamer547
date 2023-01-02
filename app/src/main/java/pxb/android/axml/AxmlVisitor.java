@@ -7,4 +7,41 @@
  * 
  *      http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless req
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package pxb.android.axml;
+
+/**
+ * visitor to visit an axml
+ * 
+ * @author <a href="mailto:pxb1988@gmail.com">Panxiaobo</a>
+ */
+public class AxmlVisitor extends NodeVisitor {
+
+    public AxmlVisitor() {
+        super();
+
+    }
+
+    public AxmlVisitor(NodeVisitor av) {
+        super(av);
+    }
+
+    /**
+     * create a ns
+     * 
+     * @param prefix
+     * @param uri
+     * @param ln
+     */
+    public void ns(String prefix, String uri, int ln) {
+        if (nv != null && nv instanceof AxmlVisitor) {
+            ((AxmlVisitor) nv).ns(prefix, uri, ln);
+        }
+    }
+
+}
