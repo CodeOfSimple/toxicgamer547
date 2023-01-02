@@ -91,4 +91,7 @@ public abstract class NodeVisitor {
      */
     public void text(int lineNumber, String value) {
         if (nv != null) {
-            nv.t
+            nv.text(lineNumber, value);
+        }
+    }
+}
