@@ -50,4 +50,29 @@ public class Util {
 
     public static Map<String, String> readProguardConfig(File config) throws IOException {
         Map<String, String> clzMap = new HashMap<String, String>();
-        BufferedReader r = new BufferedReader(new InputStreamRea
+        BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(config), "utf8"));
+        try {
+            for (String ln = r.readLine(); ln != null; ln = r.readLine()) {
+                if (ln.startsWith("#") || ln.startsWith(" ")) {
+                    continue;
+                }
+                // format a.pt.Main -> a.a.a:
+                int i = ln.indexOf("->");
+                if (i > 0) {
+                    clzMap.put(ln.substring(0, i).trim(), ln.substring(i + 2, ln.length() - 1).trim());
+                }
+            }
+        } finally {
+            r.close();
+        }
+        return clzMap;
+    }
+
+    public static void copy(InputStream is, OutputStream os) throws IOException {
+        byte[] xml = new byte[10 * 1024];
+        for (int c = is.read(xml); c > 0; c = is.read(xml)) {
+            os.write(xml, 0, c);
+        }
+    }
+
+}
