@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_main"
+            android:icon="@drawable/add"
+            android:title="@string/nav_header_title" />
+        <item
+            android:id="@+id/nav_config"
+            android:icon="@drawable/edit"
+            android:title="@string/menu_config" />
+        <item
+            android:id="@+id/nav_download"
+            android:icon="@drawable/download"
+            android:title="@string/menu_download" />
+        <item
+            android:id="@+id/nav_help"
+            android:icon="@drawable/help"
+            android:title="@string/menu_help" />
+        <item
+            android:id="@+id/nav_about"
+            android:icon="@drawable/about"
+            android:title="@string/menu_about" />
+    </group>
+</menu>
