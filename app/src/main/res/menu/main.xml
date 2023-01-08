@@ -10,4 +10,51 @@
     <group
         android:checkableBehavior="all">
         <item
-            android:i
+            android:id="@+id/settings_verbose_logging"
+            android:orderInCategory="100"
+            android:title="@string/settings_verbose_logging"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings_check_for_updates"
+            android:orderInCategory="101"
+            android:title="@string/settings_check_for_updates"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings_developer_mode"
+            android:orderInCategory="102"
+            android:title="@string/settings_developer_mode"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings_disable_mono_mod"
+            android:orderInCategory="103"
+            android:title="@string/settings_disable_mono_mod"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings_rewrite_missing"
+            android:orderInCategory="104"
+            android:title="@string/settings_rewrite_missing"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/settings_advanced_mode"
+            android:orderInCategory="105"
+            android:title="@string/settings_advanced_mode"
+            app:showAsAction="never" />
+    </group>
+    <item
+        android:id="@+id/settings_set_mod_path"
+        android:orderInCategory="110"
+        android:title="@string/settings_set_mod_path"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/settings_set_app_name"
+        android:orderInCategory="111"
+        android:title="@string/settings_set_app_name"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/settings_language"
+        android:orderInCategory="112"
+        android:title="@string/settings_set_language"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/settings_translation_service"
+        android:orderInCategory="113"
