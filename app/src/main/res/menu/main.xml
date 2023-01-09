@@ -58,3 +58,6 @@
     <item
         android:id="@+id/settings_translation_service"
         android:orderInCategory="113"
+        android:title="@string/settings_translation_service"
+        app:showAsAction="never" />
+</menu>
