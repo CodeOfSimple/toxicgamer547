@@ -54,4 +54,33 @@
     <string name="save">Save</string>
     <string name="settings_check_for_updates">Check For Updates</string>
     <string name="settings_developer_mode">Developer Mode</string>
-    <string name="settings_set_language">Language<
+    <string name="settings_set_language">Language</string>
+    <string name="settings_set_mod_path">Set Mods Path</string>
+    <string name="settings_translation_service">Translation Service</string>
+    <string name="settings_verbose_logging">Verbose Logging</string>
+    <string name="signing_package">Signing</string>
+    <string name="smapi_game_name">SMAPI Stardew Valley</string>
+    <string name="smapi_version">SMAPI Version: 3.7.6.1</string>
+    <string name="text_install_tip1">Notes: Game version 1.4.5.148 or later is required.</string>
+    <string name="text_install_tip2">The base game is required when updating/installing.</string>
+    <string name="unpacking_smapi_files">Unpacking</string>
+
+    <string name="toast_redpacket_message" translatable="false">红包码已复制\n支付宝首页搜索“9188262” 立即领红包</string>
+    <string name="icon_desc" translatable="false">icon</string>
+    <string name="mod_version_update_text" translatable="false">%1$s -> %2$s</string>
+    <string name="sort_by">Sort by</string>
+    <string name="text_too_large">Text file is too large for editor</string>
+    <string name="open_with">Open With</string>
+    <string name="no_update_text">All mods are up to date</string>
+    <string name="app_update_detected">New version detected: %1$s</string>
+    <string name="parser">Parser</string>
+    <string name="mod_version_update_checking">Checking for mod updates</string>
+    <string name="smapi_version_runing">Latest running: %s</string>
+    <string name="settings_disable_mono_mod">Disable Harmony</string>
+    <string name="settings_set_max_log_size">Max Log Size</string>
+    <string name="button_qq_group_text">QQ Group</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="settings_advanced_mode">Advanced Patch Mode</string>
+    <string name="button_initial">Initial</string>
+    <string name="error_directory_exists_with_same_filename">%1$s is not a directory, please delete it manually.</string>
+    <string name="error_patch_crc_incor
