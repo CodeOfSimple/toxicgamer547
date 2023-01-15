@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="abort">Abandonner</string>
+    <string name="android_version_confirm">La version du système de votre appareil est trop ancienne pour MonoMod, cela peut entraîner un crash du cadre 0Harmony, une mise à jour vers Android M ou plus tard si possible</string>
+    <string name="app_name">SMAPI Installateur</string>
+    <string name="button_compat">Compat</string>
+    <string name="button_donation_text">Faire un don</string>
+    <string name="button_gplay">Afficher dans le Play Store</string>
+    <string name="button_install">Installer</string>
+    <string name="button_logs">Journaux</string>
+    <string name="button_nexus">Nexus</string>
+    <string name="button_qq_group_1_text">Groupe QQ 1: 860453392</string>
+    <string name="button_qq_group_2_text">Groupe QQ 2: 1078428449</string>
+    <string name="button_release">Libération</string>
+    <string name="cancel">Annuler</string>
+    <string name="confirm">Confirmer</string>
+    <string name="confirm_delete_content">Voulez-vous vraiment le supprimer?</string>
+    <string name="confirm_disable_mod">Êtes-vous sûr de le désactiver?</string>
+    <string name="continue_text">C

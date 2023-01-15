@@ -83,4 +83,10 @@
     <string name="settings_advanced_mode">Advanced Patch Mode</string>
     <string name="button_initial">Initial</string>
     <string name="error_directory_exists_with_same_filename">%1$s is not a directory, please delete it manually.</string>
-    <string name="error_patch_crc_incor
+    <string name="error_patch_crc_incorrect">Patch %1$s failed: CRC (%2$s))</string>
+    <string name="settings_rewrite_in_parallel">Rewrite in Parallel</string>
+    <string name="request_unknown_source_permission">Needs to switch unknown source permission on to install mod framework, open settings?</string>
+    <string name="settings_rewrite_missing">Rewrite Missing</string>
+    <string name="settings_set_app_name">Patched App Name</string>
+    <string name="request_all_files_access_permission">Need all files access permission on Android Q or above to install mod framework, continue?</string>
+</resources>
