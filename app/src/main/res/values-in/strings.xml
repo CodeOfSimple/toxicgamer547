@@ -1,1 +1,27 @@
-<?xml versi
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="abort">Batalkan</string>
+    <string name="android_version_confirm">Versi sistem android anda terlalu tua untuk MonoMod. Ini dapat menyebabkan kerusakan pada kerangka 0Harmony. Mohon perbarui versi android anda ke Android M atau lebih baru jika memungkinkan.</string>
+    <string name="app_name">Pemasang SMAPI</string>
+    <string name="button_compat">Kompatibiltas</string>
+    <string name="button_donation_text">Donasi</string>
+    <string name="button_gplay">Lihat di Play Store</string>
+    <string name="button_install">Pasang</string>
+    <string name="button_logs">Catatan</string>
+    <string name="button_nexus">Nexus</string>
+    <string name="button_qq_group_1_text">Grub QQ①: 860453392</string>
+    <string name="button_qq_group_2_text">Grub QQ②: 1078428449</string>
+    <string name="button_release">Situs Resmi</string>
+    <string name="cancel">Batalkan</string>
+    <string name="confirm">Konfirmasi</string>
+    <string name="confirm_delete_content">Anda yakin akan menghapusnya?</string>
+    <string name="confirm_disable_mod">Anda yakin akan menonaktifkannya?</string>
+    <string name="continue_text">Lanjutkan</string>
+    <string name="download_unpack_success">Mengunduh dan membongkar sukses</string>
+    <string name="downloading">Mengunduh:%1$dKB /%2$dKB</string>
+    <string name="duplicate_mod_found">Duplikat mod ditemukan. Anda harus menghapus duplikat modnya terlebih dahulu:%s</string>
+    <string name="error">Kesalahan</string>
+    <string name="error_depends_on_mod">%1$s bergantung pada %2$s. Anda harus memasangnya terlebih dahulu</string>
+    <string name="error_depends_on_mod_version">%1$s bergantung pada %2$s %3$s atau lebih baru. Anda harus memperbaruinya terlebih dahulu</string>
+    <string name="error_failed_to_create_file">Gagal membuat target file:%s</string>
+    <string name="error_failed_to_download">Gagal mengunduh target sumber daya</strin
