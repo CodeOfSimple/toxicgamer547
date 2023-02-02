@@ -52,4 +52,17 @@
     <string name="ok">OK</string>
     <string name="patching_package">Menambal SMAPI</string>
     <string name="progress">Kemajuan</string>
-    <string
+    <string name="save">Simpan</string>
+    <string name="settings_check_for_updates">Memeriksa Pembaruan</string>
+    <string name="settings_developer_mode">Mode Pengembang</string>
+    <string name="settings_set_language">Bahasa</string>
+    <string name="settings_set_mod_path">Setel Jalur Mod</string>
+    <string name="settings_translation_service">Layanan Penerjemah</string>
+    <string name="settings_verbose_logging">Catatan Terperinci</string>
+    <string name="signing_package">Menandatangani</string>
+    <string name="smapi_game_name">SMAPI Stardew Valley</string>
+    <string name="smapi_version">Versi SMAPI: 3.7.6.1</string>
+    <string name="text_install_tip1">Catatan: Dibutuhkan Stardew Valley versi 1.4.5.148 atau yang lebih baru.</string>
+    <string name="text_install_tip2">Permainan dasar diperlukan saat memperbarui/menginstal.</string>
+    <string name="unpacking_smapi_files">Membongkar</string>
+</resources>

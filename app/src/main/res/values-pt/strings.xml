@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="abort">Abortar</string>
+    <string name="android_version_confirm">A versão do sistema do seu dispositivo é muito antiga para o MonoMod, isso pode levar ao travamento da estrutura 0Harmony, atualizar para o Android M ou posterior, se possível</string>
+    <string name="app_name">Instalador SMAPI</string>
+    <string name="button_compat">Compat</string>
+    <string name="button_donation_text">Doação</string>
+    <string name="button_gplay">Ver na Play Store</string>
+    <string name="button_install">Instalar</string>
+    <string name="button_logs">Histórico</string>
+    <string name="button_nexus">Nexus</string>
+    <string name="button_qq_group_1_text">Grupo QQ 1: 860453392</string>
+    <string name="button_qq_group_2_text">Grupo QQ 2: 1078428449</string>
+    <string name="button_release">Liberação</string>
+ 
