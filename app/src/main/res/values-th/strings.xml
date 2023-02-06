@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="abort">หยุด</string>
+    <string name="android_version_confirm">ระบบอุปกรณ์ของคุณเก่าเกินกว่าจะใช้ MonoMod อาจจะทำให้ 0Harmony framework เกิดอาการ game crash ถ้าเป็นไปได้กรุณาอัปเดตเป็น Android 6 หรือใหม่กว่า</string>
+    <string name="app_name">แอปติดตั้ง SMAPI</string>
+    <string name="button_compat">ใช้กับแอปนี้ได้</string>
+    <string name="button_donation_text">การบริจาค</string>
+    <string name="button_gplay">ดูใน Play Store</string>
+    <string name="button_install">ติดตั้ง</string>
+    <string name="button_logs">บันทึกการทำงานของ SMAPI</string>
+    <string name="button_nexus">Nexus</string>
+    <string name="button_qq_group_1_text">กลุ่ม QQ 1: 860453392</string>
+    <string name="butt
