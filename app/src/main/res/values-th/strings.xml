@@ -64,4 +64,29 @@
     <string name="smapi_version">เวอร์ชั่น SMAPI: 3.7.6.1</string>
     <string name="text_install_tip1">หมายเหตุ: ต้องการเกมเวอร์ชั่น 1.4.5.148 หรือใหม่กว่า</string>
     <string name="text_install_tip2">ต้องการเกมหลักเมื่อทำการอัปเดต / ติดตั้ง</string>
-    <string name="unpacking_smapi_files">กำล
+    <string name="unpacking_smapi_files">กำลังแกะกล่อง</string>
+
+    <string name="toast_redpacket_message" translatable="false">红包码已复制\n支付宝首页搜索“9188262” 立即领红包</string>
+    <string name="icon_desc" translatable="false">icon</string>
+    <string name="mod_version_update_text" translatable="false">พบเวอร์ชั่นใหม่: %2$s</string>
+    <string name="sort_by">จัดเรียงตาม</string>
+    <string name="text_too_large">ไฟล์มีขนาดใหญ่เกินไปสำหรับเครื่องมือแก้ไข</string>
+    <string name="open_with">เปิดด้วย</string>
+    <string name="no_update_text">Mods ทั้งหมดเป็นเวอร์ชั่นล่าสุด</string>
+    <string name="app_update_detected">ตรวจพบเวอร์ชั่นใหม่: %1$s</string>
+    <string name="parser">วิเคราะห์</string>
+    <string name="mod_version_update_checking">กำลังตรวจหาการอัปเดตของ Mod</string>
+    <string name="smapi_version_runing">ใช้งานล่าสุด: %s</string>
+    <string name="settings_disable_mono_mod">ปิดการใช้งาน Harmony</string>
+    <string name="settings_set_max_log_size">ขนาดไฟล์บันทึกสูงสุด</string>
+    <string name="button_qq_group_text">กลุ่ม QQ</string>
+    <string name="privacy_policy">นโยบายความเป็นส่วนตัว</string>
+    <string name="settings_advanced_mode">โหมดการแพทช์ขั้นสูง</string>
+    <string name="button_initial">เริ่มต้น</string>
+    <string name="error_directory_exists_with_same_filename">%1$s ไม่อยู่ในตำแหน่งที่ถูกต้อง กรุณาลบไฟล์ออก</string>
+    <string name="error_patch_crc_incorrect">การแพทช์ %1$s ล้มเหลว: CRC (%2$s))</string>
+    <string name="settings_rewrite_in_parallel">เปิดใช้งาน Multi-Thread</string>
+    <string name="request_unknown_source_permission">จำเป็นต้องเปิดการอนุญาตให้ติดตั้ง App จากแหล่งที่ไม่รู้จักก่อน, คุณต้องการเปิดเมนูตั้งค่าหรือไม่?</string>
+    <string name="settings_rewrite_missing">Rewrite Missing</string>
+    <string name="settings_set_app_name">ตั้งชื่อ App ใหม่</string>
+    <string name="request_all_files_access_permission">จำเป็นต้องได้รับอนุญาตให้เข้าถึงไฟล์ทั้งหมด บนระบบ Android 10 ขึ้นไป
