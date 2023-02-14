@@ -1,0 +1,9 @@
+<resources>
+    <string name="abort">Зупинити</string>
+    <string name="android_version_confirm">Система вашого пристрою занадто стара для MonoMod, це може призвести до збою 0Harmony framework, тому, якщо можливо, вам варто оновити свій пристрій до Android M чи версіями вище</string>
+    <string name="app_name">Встановлювач SMAPI</string>
+    <string name="button_compat">Сумісність</string>
+    <string name="button_donation_text">Донати</string>
+    <string name="button_gplay">Подивитися у Play Маркеті</string>
+    <string name="button_install">Встановити</string>
+    <string name="button_logs
