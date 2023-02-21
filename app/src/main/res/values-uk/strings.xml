@@ -57,4 +57,31 @@
     <string name="settings_set_language">Мова застосунку</string>
     <string name="settings_set_mod_path">Встановити шлях до модів гри</string>
     <string name="settings_translation_service">Сервіс перекладу</string>
-    <string name="settings_verbose_logging">До
+    <string name="settings_verbose_logging">Докдадний вхід</string>
+    <string name="signing_package">Реєстрація</string>
+    <string name="smapi_game_name">SMAPI Stardew Valley</string>
+    <string name="smapi_version">Версія SMAPI: 3.7.6.1</string>
+    <string name="text_install_tip1">Примітка: Необхідна версія гри 1.4.5.148 або вище.</string>
+    <string name="text_install_tip2">Базова гра потрібна при оновленні/встановленні.</string>
+    <string name="unpacking_smapi_files">Розпакування</string>
+    <string name="toast_redpacket_message" translatable="false">红包码已复制\n支付宝首页搜索“9188262” 立即领红包</string>
+    <string name="icon_desc" translatable="false">icon</string>
+    <string name="mod_version_update_text" translatable="false">%1$s -> %2$s</string>
+    <string name="sort_by">Сортувати</string>
+    <string name="text_too_large">Текстовий файл занадто довгий для редактора</string>
+    <string name="open_with">Відкрити за допомогою</string>
+    <string name="no_update_text">Ви маєте останні версії модів</string>
+    <string name="app_update_detected">Виявлено нову версію: %1$s</string>
+    <string name="parser">Синтаксичний аналізатор</string>
+    <string name="mod_version_update_checking">Перевірка оновлень для моду</string>
+    <string name="smapi_version_runing">Останній запуск: %s</string>
+    <string name="settings_disable_mono_mod">Вимкнути Harmony</string>
+    <string name="settings_set_max_log_size">Максимальний розмір журналу</string>
+    <string name="button_qq_group_text">Група в QQ</string>
+    <string name="privacy_policy">Політика конфіденційності</string>
+    <string name="settings_advanced_mode">Розширений режим патчу</string>
+    <string name="button_initial">Джерело</string>
+    <string name="error_directory_exists_with_same_filename">%1$s це не каталог, видаліть його власноруч.</string>
+    <string name="error_patch_crc_incorrect">Не вдалося запатчити %1$s: CRC (%2$s))</string>
+    <string name="settings_rewrite_in_parallel">Перепишіть у Parallel</string>
+    <string
