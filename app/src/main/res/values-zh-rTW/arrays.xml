@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="donation_methods">
+        <item>支付寶</item>
+        <item>微信</item>
+        <item>QQ</item>
+        <item>紅包碼</item>
+        <item>贊助列表</item>
+    </string-array>
+    <string-array name="languages">
+        <item>自動</item>
+        <item>English</item>
+        <item>简体中文</item>
+        <item>繁體中文</item>
+        <item>한국어</item>
+        <item>ไทย</item>
+        <item>Español</item>
+        <item>Français</item>
+        <item>Português</item>
+        <item>Bahasa Indonesia</item>
+        <item>Українська</item>
+    </string-array>
+    <string-array name="translators">
+        <item>關閉</item>
+        <item>Google 翻譯</item>
+        <item>有道翻譯</item>
+    </string-array>
+    <string-array name="mod_list_sort_by">
+        <item>名稱（正序）</item>
+        <item>名稱（倒序）</item>
+        <item>日期（正序）</item>
+        <item>日期（倒序）</item>
+    </string-array>
+    <string-array name="vk_config_mode">
+        <item>圖形</item>
+        <item>文本</item>
+    </string-array>
+</resources>
